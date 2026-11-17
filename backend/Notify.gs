@@ -1,0 +1,83 @@
+/**
+ * action=notify — รับแจ้งเงินเข้าอัตโนมัติจากแอป Android "KTB → เงินเข้า"
+ *
+ * แอปจะอ่าน notification ของ Krungthai NEXT แล้วส่งยอดเงินเข้ามาที่นี่
+ * ความปลอดภัย:
+ *   - ต้องส่ง token ที่ตรงกับ Script Properties NOTIFY_TOKEN
+ *     (token ไม่ได้อยู่ในหน้าเว็บ/ไฟล์ frontend)
+ *   - จำกัดไม่เกิน 30 ครั้ง/นาที กันการยิงรัว
+ *   - กันแจ้งซ้ำด้วย ref (เก็บใน CacheService 6 ชั่วโมง)
+ *   - รองรับ dryRun สำหรับปุ่ม "ทดสอบเชื่อมต่อ" (ไม่บันทึกข้อมูล)
+ */
+
+var NOTIFY_TOKEN_PROP = 'NOTIFY_TOKEN';
+var NOTIFY_MAX_PER_MINUTE = 30;
+var NOTIFY_DEDUPE_SECONDS = 21600; // 6 ชั่วโมง
+
+function getNotifyToken_() {
+  return PropertiesService.getScriptProperties().getProperty(NOTIFY_TOKEN_PROP) || '';
+}
+
+function notifyRecord_(payload) {
+  payload = payload || {};
+
+  var expected = getNotifyToken_();
+  if (!expected) {
+    throw new Error('ยังไม่ได้ตั้งค่า token สำหรับรับแจ้งเตือนอัตโนมัติ');
+  }
+  if (String(payload.token || '') !== expected) {
+    throw new Error('token ไม่ถูกต้อง');
+  }
+
+  var amount = Number(payload.amount);
+  if (!isFinite(amount) || amount <= 0) {
+    throw new Error('ยอดเงินไม่ถูกต้อง');
+  }
+  amount = Math.round(amount * 100) / 100;
+
+  // ปุ่มทดสอบในแอป: ตรวจ token อย่างเดียว ไม่เขียนข้อมูล
+  if (payload.dryRun) {
+    return { dryRun: true, ok: true, amount: amount };
+  }
+
+  var cache = CacheService.getScriptCache();
+
+  var minuteKey = 'notify-rate-' + Math.floor(Date.now() / 60000);
+  var used = Number(cache.get(minuteKey) || 0);
+  if (used >= NOTIFY_MAX_PER_MINUTE) {
+    throw new Error('มีรายการเข้ามาถี่เกินไป กรุณารอสักครู่');
+  }
+  cache.put(minuteKey, String(used + 1), 120);
+
+  var ref = String(payload.ref || '').trim().slice(0, 80);
+  if (ref) {
+    var dupKey = 'notify-ref-' + ref;
+    if (cache.get(dupKey)) {
+      return { duplicate: true, record: null };
+    }
+    cache.put(dupKey, '1', NOTIFY_DEDUPE_SECONDS);
+  }
+
+  var record = createRecord_({
+    ref: ref,
+    customer: String(payload.customer || '').trim(),
+    bank: String(payload.bank || 'กรุงไทย (KTB NEXT)').trim(),
+    amount: amount,
+    note: String(payload.note || 'เงินเข้าอัตโนมัติจาก KTB NEXT').slice(0, 200)
+  });
+
+  return { duplicate: false, record: record };
+}
+
+/**
+ * ตั้ง token สำหรับรับแจ้งเตือน (รันจาก Apps Script editor ครั้งเดียว)
+ * ใช้ในกรณีที่ต้องการเปลี่ยน token ด้วยตัวเอง
+ */
+function setNotifyToken(token) {
+  token = String(token || '').trim();
+  if (token.length < 20) {
+    throw new Error('token ต้องยาวอย่างน้อย 20 ตัวอักษร');
+  }
+  PropertiesService.getScriptProperties().setProperty(NOTIFY_TOKEN_PROP, token);
+  return { ok: true, hasToken: true };
+}

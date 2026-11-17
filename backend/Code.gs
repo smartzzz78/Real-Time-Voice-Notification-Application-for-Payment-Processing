@@ -49,6 +49,9 @@ function handleRequest_(e, method) {
       case 'create':
         data = createRecord_(payload);
         break;
+            case 'notify':
+        data = notifyRecord_(payload);
+        break;
       case 'upload':
         data = uploadFile_(payload);
         break;
