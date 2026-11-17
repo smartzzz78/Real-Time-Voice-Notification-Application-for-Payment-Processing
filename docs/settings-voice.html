@@ -48,6 +48,19 @@
       <p class="font-label-sm text-label-sm text-on-surface-variant" id="current-voice-desc">ระบบพูดแค่ “เงินเข้า … บาท” (ไม่พูดชื่อลูกค้า)</p>
     </div>
 
+    <div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm border border-outline-variant/30 flex flex-col gap-space-sm">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-[20px]">speaker</span>
+          <span class="font-title-md text-title-md text-on-surface">แหล่งเสียงที่ใช้ประกาศ</span>
+        </div>
+        <span class="px-2 py-0.5 rounded-full bg-primary text-on-primary font-label-sm text-[11px] font-bold whitespace-nowrap" id="source-badge">—</span>
+      </div>
+      <div class="flex flex-col gap-space-xs" id="source-list"></div>
+      <p class="font-label-sm text-label-sm text-on-surface-variant leading-relaxed">ตั้งค่าเฉพาะเครื่องนี้ (จำไว้ในเบราว์เซอร์) — เครื่องอื่นหรือมือถืออีกเครื่องไม่เปลี่ยนตาม</p>
+      <p class="font-label-sm text-label-sm text-on-surface-variant leading-relaxed" id="system-voice-hint"></p>
+    </div>
+
     <div class="flex flex-col gap-space-xs">
       <div class="flex items-center gap-2 px-1">
         <span class="material-symbols-outlined text-primary text-[20px]">record_voice_over</span>
@@ -106,6 +119,65 @@
   var SAMPLE_TEXT = 'เงินเข้า 150 บาท';
   var selectedVoice = 'Zephyr';
   var toastTimeout = null;
+
+  var SOURCES = [
+    { key: 'ai',     name: 'เสียง AI (Gemini)', desc: 'คุณภาพดี เป็นธรรมชาติ • ใช้เน็ตและโควตา AI', icon: 'auto_awesome' },
+    { key: 'system', name: 'เสียงเครื่อง',       desc: 'ไม่ใช้เน็ต ไม่กินโควตา • เสียงขึ้นกับเครื่องนี้', icon: 'phone_iphone' }
+  ];
+  var voiceSource = (window.AiVoice && window.AiVoice.getSource) ? window.AiVoice.getSource() : 'ai';
+
+  function renderSources() {
+    var list = document.getElementById('source-list');
+    if (!list) return;
+
+    var html = '';
+    for (var i = 0; i < SOURCES.length; i++) {
+      var s = SOURCES[i];
+      var active = s.key === voiceSource;
+      var cls = active
+        ? 'p-3 rounded-xl border-2 border-primary bg-primary/5 flex items-center justify-between gap-2 transition-all w-full text-left'
+        : 'p-3 rounded-xl border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container flex items-center justify-between gap-2 transition-all w-full text-left';
+      html += '<button type="button" data-source="' + s.key + '" class="' + cls + '">'
+        + '<span class="flex items-center gap-3 min-w-0">'
+        + '<span class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center shrink-0">'
+        + '<span class="material-symbols-outlined text-primary text-[18px]">' + s.icon + '</span></span>'
+        + '<span class="flex flex-col min-w-0">'
+        + '<span class="font-label-lg text-label-lg font-bold text-on-surface truncate">' + s.name + '</span>'
+        + '<span class="font-label-sm text-label-sm text-on-surface-variant">' + s.desc + '</span>'
+        + '</span></span>'
+        + '<span class="material-symbols-outlined ' + (active ? 'text-primary' : 'text-outline-variant') + ' shrink-0">'
+        + (active ? 'check_circle' : 'radio_button_unchecked') + '</span>'
+        + '</button>';
+    }
+    list.innerHTML = html;
+
+    var badge = document.getElementById('source-badge');
+    if (badge) badge.innerText = (voiceSource === 'system') ? 'เสียงเครื่อง' : 'เสียง AI';
+
+    var hint = document.getElementById('system-voice-hint');
+    if (hint) {
+      var noThaiVoice = window.AiVoice && window.AiVoice.hasThaiSystemVoice && !window.AiVoice.hasThaiSystemVoice();
+      if (voiceSource === 'system' && noThaiVoice) {
+        hint.className = 'font-label-sm text-label-sm text-error leading-relaxed';
+        hint.innerText = '⚠ เครื่องนี้ยังไม่มีเสียงภาษาไทย — จะใช้เสียงเริ่มต้นของเครื่อง แนะนำติดตั้งเสียงไทยใน Settings > Text-to-speech';
+      } else if (voiceSource === 'system') {
+        hint.className = 'font-label-sm text-label-sm text-on-surface-variant leading-relaxed';
+        hint.innerText = 'เครื่องนี้มีเสียงภาษาไทยพร้อมใช้ — จะไม่เรียก API เลย';
+      } else {
+        hint.className = 'font-label-sm text-label-sm text-on-surface-variant leading-relaxed';
+        hint.innerText = 'ถ้าเสียง AI ใช้งานไม่ได้ (เน็ต/โควตา) ระบบจะสลับเป็นเสียงเครื่องให้อัตโนมัติ';
+      }
+    }
+  }
+
+  function selectSource(source) {
+    voiceSource = (window.AiVoice && window.AiVoice.setSource)
+      ? window.AiVoice.setSource(source)
+      : source;
+    renderSources();
+    renderPersonas();
+    showToast('ใช้' + (voiceSource === 'system' ? 'เสียงเครื่อง' : 'เสียง AI (Gemini)') + 'ประกาศแล้ว', 'speaker');
+  }
 
   function showToast(text, icon) {
     var banner = document.getElementById('toast-banner');
@@ -170,7 +242,11 @@
     var desc = document.getElementById('current-voice-desc');
     var p2 = personaByVoice(selectedVoice);
     if (badge) badge.innerText = p2 ? p2.name : selectedVoice;
-    if (desc) desc.innerText = 'เสียง ' + selectedVoice + ' • พูดแค่ “เงินเข้า … บาท” (ไม่พูดชื่อลูกค้า)';
+    if (desc) {
+      desc.innerText = (voiceSource === 'system')
+        ? 'ใช้เสียงเครื่อง • พูดแค่ “เงินเข้า … บาท” (ไม่พูดชื่อลูกค้า)'
+        : 'เสียง ' + selectedVoice + ' • พูดแค่ “เงินเข้า … บาท” (ไม่พูดชื่อลูกค้า)';
+    }
   }
 
   function selectVoice(voice) {
@@ -189,6 +265,12 @@
     selectVoice(btn.getAttribute('data-voice'));
   });
 
+  document.getElementById('source-list').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-source]');
+    if (!btn) return;
+    selectSource(btn.getAttribute('data-source'));
+  });
+
   function testCurrentVoice() {
     var label = document.getElementById('test-voice-label');
     if (label) label.innerText = 'กำลังเล่นเสียง…';
@@ -200,10 +282,14 @@
     };
 
     if (window.AiVoice && window.AiVoice.speak) {
-      window.AiVoice.speak(SAMPLE_TEXT, { voice: selectedVoice }).then(function (src) {
+      window.AiVoice.speak(SAMPLE_TEXT, { voice: selectedVoice, source: voiceSource }).then(function (src) {
         done();
         if (src === 'system') {
-          showToast('ยังใช้เสียง AI ไม่ได้ (คีย์/โควต้า) — เล่นด้วยเสียงระบบแทน', 'info');
+          if (voiceSource === 'system') {
+            showToast('เล่นด้วยเสียงเครื่องแล้ว (ไม่ได้เรียก API)', 'phone_iphone');
+          } else {
+            showToast('ยังใช้เสียง AI ไม่ได้ (คีย์/โควต้า) — เล่นด้วยเสียงระบบแทน', 'info');
+          }
         }
       }).catch(function () {
         done();
@@ -288,8 +374,16 @@
     }
   }
 
+  renderSources();
   renderPersonas();
   loadAiVoiceStatus();
+
+  // รายการเสียงของเครื่องอาจโหลดช้ากว่า — อัปเดตคำเตือนอีกครั้งเมื่อโหลดเสร็จ
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = function () {
+      renderSources();
+    };
+  }
 
   // ปลดล็อกเสียงบนมือถือ (ต้องมีการแตะก่อนเล่นเสียง)
   ['touchstart', 'touchend', 'click', 'pointerdown'].forEach(function (ev) {

@@ -1,18 +1,55 @@
 /**
  * ai-voice.js — เสียง AI สำหรับประกาศยอดเงินเข้า (Gemini TTS ผ่าน Apps Script)
  *
- * window.AiVoice.speak(text, { voice, model }) -> Promise<'ai'|'system'>
+ * window.AiVoice.speak(text, { voice, model, source }) -> Promise<'ai'|'system'>
+ *   0. ถ้าผู้ใช้เลือก "เสียงเครื่อง" (AiVoice.setSource('system')) จะใช้ speechSynthesis
+ *      ของอุปกรณ์ทันที ไม่เรียก API — เก็บค่าใน localStorage (แยกตามเครื่อง)
  *   1. ขอเสียงจาก backend (action=speak) ซึ่งเรียก Gemini TTS ให้
  *      (คีย์ API อยู่ฝั่งเซิร์ฟเวอร์ ไม่มีการส่งออกมาหน้าเว็บ)
  *   2. เล่นเสียงที่ได้ (audio/wav หรือ PCM 24kHz ที่ต้องใส่ header WAV เอง)
  *   3. ถ้า API ล้มเหลว (ไม่มีคีย์/โควต้า/ออฟไลน์) -> ใช้เสียงระบบ speechSynthesis สำรอง
  *
  * window.AiVoice.status() -> Promise<{ hasKey, voice, model }>
+ * window.AiVoice.getSource() / setSource('ai'|'system')
+ * window.AiVoice.hasThaiSystemVoice() -> boolean
  */
 (function () {
   'use strict';
 
   var currentAudio = null;
+
+  // แหล่งเสียงที่ผู้ใช้เลือก: 'ai' (Gemini) หรือ 'system' (เสียงในเครื่อง)
+  // เก็บใน localStorage = ตั้งค่าแยกตามเครื่อง/เบราว์เซอร์
+  var SOURCE_KEY = 'voiceSource';
+  var DEFAULT_SOURCE = 'ai';
+
+  function getSource() {
+    try {
+      var v = window.localStorage.getItem(SOURCE_KEY);
+      return (v === 'system') ? 'system' : DEFAULT_SOURCE;
+    } catch (e) {
+      return DEFAULT_SOURCE;
+    }
+  }
+
+  function setSource(source) {
+    var v = (source === 'system') ? 'system' : 'ai';
+    try { window.localStorage.setItem(SOURCE_KEY, v); } catch (e) { /* โหมดส่วนตัว = ใช้ค่าเริ่มต้น */ }
+    return v;
+  }
+
+  function hasThaiSystemVoice() {
+    if (!('speechSynthesis' in window)) return false;
+    var voices = window.speechSynthesis.getVoices() || [];
+    for (var i = 0; i < voices.length; i++) {
+      var v = voices[i];
+      if (v.lang === 'th-TH' || (v.lang || '').indexOf('th') === 0 ||
+          (v.name || '').toLowerCase().indexOf('thai') !== -1) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   // Cache เสียงที่สร้างแล้ว (ข้อความ+เสียงเดิม = ใช้เสียงเดิมซ้ำ ไม่ยิง API ซ้ำ / ประหยัดโควต้า)
   var audioCache = {};
@@ -127,6 +164,15 @@
     text = String(text || '');
     if (!text) return 'none';
 
+    var source = (opts && opts.source) ? opts.source : getSource();
+
+    // เลือกใช้เสียงในเครื่องล้วน (ไม่เรียก API / ไม่กินโควตา)
+    if (source === 'system') {
+      stopCurrent();
+      systemSpeak(text);
+      return 'system';
+    }
+
     try {
       var payload = { text: text };
       if (opts && opts.voice) payload.voice = opts.voice;
@@ -189,5 +235,11 @@
     }
   }
 
-  window.AiVoice = { speak: speak, status: status };
+  window.AiVoice = {
+    speak: speak,
+    status: status,
+    getSource: getSource,
+    setSource: setSource,
+    hasThaiSystemVoice: hasThaiSystemVoice
+  };
 })();
