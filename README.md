@@ -217,13 +217,13 @@ gh api -X POST repos/{owner}/sheet-drive-app/pages `
    *"เงินเข้า 150 บาท"* (พูดแค่ยอดเงิน ไม่พูดชื่อลูกค้า — แต่ toast และแบนเนอร์บนจอแสดงชื่อลูกค้าด้วย)
    (โหมดเสียง AI: ถ้า AI ใช้ไม่ได้ จะเปลี่ยนเป็นเสียงระบบอัตโนมัติ)
 
-## เงินเข้าอัตโนมัติจาก Krungthai NEXT (APK เสริม)
+## เงินเข้าอัตโนมัติจาก Krungthai NEXT
 
 เป้าหมาย: **มีคนโอนเงิน → แอปที่เคาน์เตอร์ประกาศยอดให้เอง** โดยไม่ต้องกดอะไร
 
 ```
 Krungthai NEXT เด้ง notification "เงินเข้า 150.00 บาท"
-        │  (แอป "KTB → เงินเข้า" อ่าน notification เฉพาะแพ็กเกจ ktbcs.netbank)
+        │  (ตัวอ่านในแอป อ่าน notification เฉพาะแพ็กเกจ ktbcs.netbank)
         ▼
 POST action=notify  + token  ──────────────► Apps Script
         │                                      │ ตรวจ token / rate limit / กันซ้ำ
@@ -245,29 +245,40 @@ POST action=notify  + token  ──────────────► Apps 
 | กันแจ้งซ้ำ | ส่ง `ref` เดิมซ้ำภายใน 6 ชั่วโมง → ตอบ `{ duplicate:true }` ไม่บันทึกเพิ่ม |
 | ทดสอบ | ส่ง `dryRun:true` → ตรวจ token เท่านั้น ไม่เขียนข้อมูล (ใช้กับปุ่ม "ทดสอบเชื่อมต่อ") |
 
-### แอปเสริม "KTB → เงินเข้า" (Android)
+### ตัวรับเงินเข้า (อยู่ในแอปเดียวกัน)
+
+ตั้งแต่เวอร์ชัน **1.1.0** ตัวอ่าน notification รวมอยู่ในแอปหลักแล้ว (ไม่ต้องติดตั้ง 2 แอป)
+แอปหลักเปลี่ยนตัวห่อจาก TWA เป็น **WebView + NotificationListenerService** ในแอปเดียว
 
 | รายการ | ค่า |
 |---|---|
-| Package ID | `th.coffeesukjai.ktbnotify` (แยกจากแอปหลักคนละตัว) |
-| Version | 1.0.0 (versionCode 1) |
+| Package ID | `th.coffeesukjai.slipverify` (ตัวเดียวกับแอปหลัก — ติดตั้งทับรุ่น 1.0.0 ได้เลย) |
+| Version | 1.1.0 (versionCode 2) |
 | Android ที่รองรับ | 7.0 ขึ้นไป (minSdk 24, targetSdk 34) |
-| ไฟล์ติดตั้ง | `Documents\coffee-slip-apk\ktb-notify\dist\ktb-notify-v1.0.0.apk` (~29 KB) |
-| ซอร์สโค้ด | `Documents\coffee-slip-apk\ktb-notify\` — **อยู่นอก repo นี้** (มี token ฝังอยู่) |
+| ไฟล์ติดตั้ง | `Documents\coffee-slip-apk\kaafae-sukjai-v1.1.0.apk` (~37 KB) |
+| ซอร์สโค้ด | `Documents\coffee-slip-apk\app-merged\` — **อยู่นอก repo นี้** (มี token ฝังอยู่) |
 | build ใหม่ | `powershell -ExecutionPolicy Bypass -File .\build.ps1` (ไม่ใช้ Gradle, ใช้ JDK 17 + build-tools 36.1.0) |
 
-สิ่งที่แอปทำ: อ่าน notification ของ `ktbcs.netbank` → กรองเฉพาะ "เงินเข้า" (ตัด "เงินออก/โอนออก/ชำระ") →
+ในแอปเดียวมี: หน้าเว็บเต็มจอ + แถบสถานะบาง ๆ ด้านบน ("ตัวรับเงินเข้า: พร้อม ✓" แตะเพื่อตั้งค่า)
++ หน้าตั้งค่า (สิทธิ์การแจ้งเตือน / แบตเตอรี่ / ทดสอบเชื่อมต่อ / log 15 รายการ)
++ ตัวอ่าน notification ของ `ktbcs.netbank` + เสียงพูด Android TTS เป็นตัวสำรองของ "เสียงเครื่อง"
+
+> แอปเสริมรุ่นแยก `ktb-notify-v1.0.0.apk` (package `th.coffeesukjai.ktbnotify`) ยังใช้ได้เหมือนเดิม
+> แต่ไม่จำเป็นแล้ว — ถ้าติดตั้งทั้งคู่ เซิร์ฟเวอร์จะกันรายการซ้ำให้ (ref เดียวกัน)
+
+สิ่งที่ตัวรับเงินเข้าทำ: อ่าน notification ของ `ktbcs.netbank` → กรองเฉพาะ "เงินเข้า" (ตัด "เงินออก/โอนออก/ชำระ") →
 อ่านยอด (ข้าม "ยอดคงเหลือ") → ส่งเฉพาะยอด + เวลา + ref เข้าเซิร์ฟเวอร์
-มีหน้าจอสถานะ (สิทธิ์ / แบตเตอรี่), ปุ่มทดสอบเชื่อมต่อ, และ log 15 รายการล่าสุดในเครื่อง
 
 ### วิธีติดตั้ง (ทำครั้งเดียว)
 
-1. คัดลอก `ktb-notify-v1.0.0.apk` ไปที่มือถือเคาน์เตอร์ แล้วเปิดไฟล์ → อนุญาต "ติดตั้งจากแหล่งอื่น"
-2. เปิดแอป **KTB → เงินเข้า** → กด **"ตั้งค่าการเข้าถึงการแจ้งเตือน"** → เปิดสวิตช์ของแอปนี้
-3. กด **"ตั้งค่าประหยัดแบตเตอรี่"** → ตั้งค่าให้แอปนี้ **ไม่จำกัดการทำงาน** (สำคัญกับ Xiaomi/OPPO/vivo)
-4. กลับเข้าแอป → กด **"ทดสอบเชื่อมต่อเซิร์ฟเวอร์ (ไม่บันทึก)"** → ขึ้น "ทดสอบผ่าน"
-5. ในแอป Krungthai NEXT ตรวจว่าเปิดแจ้งเตือนเงินเข้าไว้ (และห้ามปิด notification ของ KTB NEXT)
-6. ทดสอบจริง: โอนเข้าบัญชีร้าน 1 บาท → ควรมองเห็น log "ส่งสำเร็จ" และหน้าแรกประกาศเองภายใน ~10 วินาที
+1. คัดลอก `kaafae-sukjai-v1.1.0.apk` ไปที่มือถือเคาน์เตอร์ แล้วเปิดไฟล์ → ติดตั้งทับรุ่นเดิมได้เลย
+2. เปิดแอป → ครั้งแรกจะเด้งหน้า **ตัวรับเงินเข้า** อัตโนมัติ
+3. กด **"ตั้งค่าการเข้าถึงการแจ้งเตือน"** → เปิดสวิตช์ของแอปนี้
+4. กด **"ตั้งค่าประหยัดแบตเตอรี่"** → ตั้งค่าให้แอปนี้ **ไม่จำกัดการทำงาน** (สำคัญกับ Xiaomi/OPPO/vivo)
+5. กด **"ทดสอบเชื่อมต่อเซิร์ฟเวอร์ (ไม่บันทึก)"** → ขึ้น "ทดสอบผ่าน"
+6. กด ‹ กลับมาหน้าเว็บ; ตรวจว่าแถบด้านบนขึ้น **"ตัวรับเงินเข้า: พร้อม ✓"**
+7. ในแอป Krungthai NEXT ตรวจว่าเปิดแจ้งเตือนเงินเข้าไว้ (และห้ามปิด notification ของ KTB NEXT)
+8. ทดสอบจริง: โอนเข้าบัญชีร้าน 1 บาท → ควรมองเห็น log "ส่งสำเร็จ" และหน้าแรกประกาศเองภายใน ~10 วินาที
 
 ### ข้อจำกัดที่ต้องรู้
 
@@ -290,31 +301,34 @@ POST action=notify  + token  ──────────────► Apps 
 
 ## แอป Android (APK)
 
-แอปเป็น **TWA (Trusted Web Activity)** — ตัวห่อที่เปิดเว็บ GitHub Pages ด้วย Chrome engine
-ทำให้กล้อง / อัปโหลดไฟล์ / เสียง ทำงานเหมือนเว็บจริง และ**อัปเดตตามเว็บอัตโนมัติ**
+ตั้งแต่ **1.1.0** แอปเป็น **WebView wrapper** ที่โหลดหน้าเว็บ GitHub Pages เต็มจอ
+และมี **NotificationListenerService** อ่าน notification ของ Krungthai NEXT อยู่ในตัว
+→ ติดตั้งแอปเดียวจบ (ตรวจสลิป + เพิ่มเงินเข้า + ตั้งค่าเสียง + ตัวรับเงินเข้าอัตโนมัติ)
+และ**อัปเดตตามเว็บอัตโนมัติ**เมื่อ push ขึ้น GitHub
 
 | รายการ | ค่า |
 |---|---|
 | Package ID | `th.coffeesukjai.slipverify` |
-| Version | 1.0.0 (versionCode 1) |
-| Android ที่รองรับ | 7.0 ขึ้นไป (minSdk 24) |
+| Version | 1.1.0 (versionCode 2) |
+| Android ที่รองรับ | 7.0 ขึ้นไป (minSdk 24, targetSdk 34) |
 | URL ที่เปิด | `https://smartzzz78.github.io/sheet-drive-app/index.html` |
-| ไฟล์ติดตั้ง | `coffee-slip-v1.0.0.apk` (~1 MB) |
+| ไฟล์ติดตั้ง | `Documents\coffee-slip-apk\kaafae-sukjai-v1.1.0.apk` (~37 KB) |
+| ซอร์สโค้ด | `Documents\coffee-slip-apk\app-merged\` (นอก repo) |
 
+- รุ่น 1.0.0 (TWA / Chrome engine) ถูกแทนที่แล้ว — เก็บ `coffee-slip-v1.0.0.apk` ไว้เป็นรุ่นย้อนกลับได้
 - ไฟล์ APK / AAB / keystore / รหัสผ่าน **ไม่ได้อยู่ใน repo นี้** (อยู่ใน `.gitignore`)
   เก็บแยกที่ `Documents\coffee-slip-apk\` พร้อม `README-APK.txt`
 - **keystore ห้ามหายและห้าม commit** — ถ้าหายจะอัปเดตทับแอปเดิมไม่ได้อีก
-- ต้องมีไฟล์ `https://smartzzz78.github.io/.well-known/assetlinks.json`
-  (อยู่ที่ repo `smartzzz78/smartzzz78.github.io` + ต้องมี `.nojekyll`)
-  เพื่อให้แอปเปิดเต็มจอไม่มีแถบ URL — ยืนยันด้วย
-  [Digital Asset Links API](https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https%3A%2F%2Fsmartzzz78.github.io&relation=delegate_permission%2Fcommon.handle_all_urls)
-- build ใหม่เฉพาะเมื่อเปลี่ยนชื่อแอป / ไอคอน / ค่าใน `twa-manifest.json` เท่านั้น
+- ไม่ต้องใช้ `assetlinks.json` แล้ว (ไม่ใช่ TWA) แต่ยังเก็บไว้ได้ไม่เสียหาย
+- WebView ในแอปตั้ง `mediaPlaybackRequiresUserGesture(false)` → เสียงกริ่ง/เสียง AI เล่นเองได้
+- "เสียงเครื่อง" ในแอปใช้ **Android TextToSpeech** ผ่านสะพาน `window.AndroidVoice` (ไม่พึ่ง speechSynthesis ของ WebView)
+- build ใหม่เฉพาะเมื่อเปลี่ยนชื่อแอป / ไอคอน / URL เว็บ / token / ตัวอ่านยอด
   (แก้โค้ดเว็บไม่ต้อง build ใหม่):
 
-```bash
-cd "$TEMP/opencode/twa-build"
-bubblewrap update --directory . --skipVersionUpgrade
-BUBBLEWRAP_KEYSTORE_PASSWORD=... BUBBLEWRAP_KEY_PASSWORD=... bubblewrap build
+```powershell
+cd "C:\Users\PC22\Documents\coffee-slip-apk\app-merged"
+powershell -ExecutionPolicy Bypass -File .\make-icon.ps1   # เฉพาะเมื่ออยากเปลี่ยนไอคอน
+powershell -ExecutionPolicy Bypass -File .\build.ps1
 ```
 
 ## โครงสร้างข้อมูลใน Sheets
