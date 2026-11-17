@@ -1,11 +1,13 @@
 /**
- * app.js — ตัวเชื่อมหน้า index.html (ตรวจสลิป) เข้ากับฐานข้อมูล Google Sheets
+  * app.js — ตัวเชื่อมหน้า index.html (ตรวจสลิป) เข้ากับฐานข้อมูล Google Sheets
  *
  * หน้าที่:
  *  1. ดึงรายการเงินเข้าจาก Apps Script API มาแสดงในฟีด
- *  2. Poll ทุก 15 วินาที — ถ้ามีรายการใหม่ = เสียงกริ่ง + อ่านออกเสียงยอดเงิน
+ *  2. Poll ทุก 8 วินาที + ซิงก์ทันทีเมื่อกลับเข้าหน้า/เน็ตกลับมา
+ *     ถ้ามีรายการใหม่ = เสียงกริ่ง + อ่านออกเสียงยอดเงิน
  *     (พูดแค่ "เงินเข้า 150 บาท" — ไม่พูดชื่อลูกค้า แต่บนจอโชว์ชื่อด้วย)
- *  3. ปุ่ม "ซิงก์ธนาคาร" กลายเป็นการดึงข้อมูลจริง
+ *     ถ้าตัวอ่านใน APK ประกาศไปแล้ว (AndroidVoice.wasAnnounced) = ไม่พูดซ้ำ
+ *  3. ปุ่ม "ซิงก์ธนาคาร" เป็นทางสำรอง (ไม่ต้องกดก็ซิงก์เอง)
  *
  * ใช้ร่วมกับฟังก์ชันเสียงของหน้า (playHarmonicDingDong, speakThai, showToast,
  * openSlipModal) ที่ประกาศเป็น global ไว้ใน index.html
@@ -175,8 +177,14 @@
   }
 
   function speakRecord(rec) {
+    // ถ้าตัวอ่านในแอป (APK) ประกาศเสียงไปแล้วตอน notification เด้ง
+    // → ไม่พูดซ้ำ แค่แสดงบนจอ
+    if (alreadyAnnouncedByApp(rec)) {
+      showAnnouncementOnScreen(rec);
+      return;
+    }
+
     var text = announceText(rec);
-    var displayText = announceDisplayText(rec);
     if (typeof playHarmonicDingDong === 'function') playHarmonicDingDong();
     setTimeout(function () {
       if (window.AiVoice && window.AiVoice.speak) {
@@ -186,6 +194,23 @@
       }
     }, 300);
 
+    showAnnouncementOnScreen(rec);
+  }
+
+  // ถามสะพาน AndroidVoice ว่า ref นี้ถูกประกาศเสียงไปแล้วหรือยัง
+  function alreadyAnnouncedByApp(rec) {
+    var ref = rec && rec.ref ? String(rec.ref) : '';
+    var bridge = window.AndroidVoice;
+    if (!ref || !bridge || typeof bridge.wasAnnounced !== 'function') return false;
+    try {
+      return !!bridge.wasAnnounced(ref);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function showAnnouncementOnScreen(rec) {
+    var displayText = announceDisplayText(rec);
     var title = document.getElementById('voiceBannerTitle');
     var status = document.getElementById('voiceStatusText');
     if (title) title.innerText = 'ประกาศยอดเงินเข้าล่าสุด';
@@ -230,6 +255,7 @@
   /* ---------- วงจรดึงข้อมูล ---------- */
 
   var knownIds = {};
+  var inFlight = false;
 
   function applyRecords(records) {
     latestRecords = records || [];
@@ -251,6 +277,9 @@
   }
 
   function refresh() {
+    if (inFlight) return Promise.resolve();
+    inFlight = true;
+
     var listRequest = window.Api.request('list').then(applyRecords).catch(function (err) {
       console.warn('ดึงข้อมูลจาก Apps Script ไม่สำเร็จ:', err && err.message ? err.message : err);
       var title = document.getElementById('voiceBannerTitle');
@@ -273,7 +302,13 @@
       return null;
     });
 
-    return Promise.all([listRequest, summaryRequest]);
+    return Promise.all([listRequest, summaryRequest]).then(function (result) {
+      inFlight = false;
+      return result;
+    }, function (err) {
+      inFlight = false;
+      throw err;
+    });
   }
 
   /* ---------- ปุ่ม "ซิงก์ธนาคาร" ให้ดึงข้อมูลจริง ---------- */
@@ -298,4 +333,14 @@
 
   refresh();
   setInterval(refresh, POLL_MS);
+
+  // ซิงก์อัตโนมัติเมื่อกลับเข้าหน้า / เน็ตกลับมา / สลับแอปกลับมา (ไม่ต้องกดปุ่ม)
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) refresh();
+  });
+  window.addEventListener('online', function () { refresh(); });
+  window.addEventListener('focus', function () { refresh(); });
+  window.addEventListener('pageshow', function (e) {
+    if (e && e.persisted) refresh();
+  });
 })();
