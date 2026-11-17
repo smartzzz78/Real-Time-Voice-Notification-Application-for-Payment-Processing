@@ -84,7 +84,9 @@ function speak_(payload) {
   var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent';
   var body = {
     contents: [{
-      parts: [{ text: 'พูดภาษาไทย: ' + text }]
+      // ส่งเฉพาะข้อความที่จะพูด — ห้ามใส่คำสั่งนำหน้า เพราะโมเดลจะอ่านออกเสียงด้วย
+      // (เช่น "พูดภาษาไทย: ..." ทำให้ได้ยินคำว่า "พูดภาษาไทย" ก่อน)
+      parts: [{ text: text }]
     }],
     generationConfig: {
       responseModalities: ['AUDIO'],
