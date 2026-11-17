@@ -108,7 +108,7 @@
 
 <script src="js/config.js"></script>
 <script src="js/api.js"></script>
-<script src="js/ai-voice.js"></script>
+<script src="js/ai-voice.js?v=2"></script>
 <script>
   var PERSONAS = [
     { key: 'mali',    name: 'น้องมะลิ',      desc: 'สดใส เป็นกันเอง',      voice: 'Zephyr' },
@@ -124,7 +124,27 @@
     { key: 'ai',     name: 'เสียง AI (Gemini)', desc: 'คุณภาพดี เป็นธรรมชาติ • ใช้เน็ตและโควตา AI', icon: 'auto_awesome' },
     { key: 'system', name: 'เสียงเครื่อง',       desc: 'ไม่ใช้เน็ต ไม่กินโควตา • เสียงขึ้นกับเครื่องนี้', icon: 'phone_iphone' }
   ];
-  var voiceSource = (window.AiVoice && window.AiVoice.getSource) ? window.AiVoice.getSource() : 'ai';
+  // อ่าน/เขียนค่าจาก localStorage ตรง ๆ ด้วย เพื่อให้ค่าคงอยู่แม้ไฟล์ ai-voice.js
+  // เวอร์ชันเก่าถูกแคชไว้ในเบราว์เซอร์ (คีย์เดียวกัน: voiceSource)
+  function readStoredSource() {
+    try {
+      var v = window.localStorage.getItem('voiceSource');
+      return v === 'system' ? 'system' : 'ai';
+    } catch (e) {
+      return (window.AiVoice && window.AiVoice.getSource) ? window.AiVoice.getSource() : 'ai';
+    }
+  }
+
+  function writeStoredSource(source) {
+    var v = source === 'system' ? 'system' : 'ai';
+    try { window.localStorage.setItem('voiceSource', v); } catch (e) { /* โหมดส่วนตัว = จำไม่ได้ */ }
+    if (window.AiVoice && window.AiVoice.setSource) {
+      try { window.AiVoice.setSource(v); } catch (e) { /* ไม่เป็นไร */ }
+    }
+    return v;
+  }
+
+  var voiceSource = readStoredSource();
 
   function renderSources() {
     var list = document.getElementById('source-list');
@@ -171,9 +191,7 @@
   }
 
   function selectSource(source) {
-    voiceSource = (window.AiVoice && window.AiVoice.setSource)
-      ? window.AiVoice.setSource(source)
-      : source;
+    voiceSource = writeStoredSource(source);
     renderSources();
     renderPersonas();
     showToast('ใช้' + (voiceSource === 'system' ? 'เสียงเครื่อง' : 'เสียง AI (Gemini)') + 'ประกาศแล้ว', 'speaker');

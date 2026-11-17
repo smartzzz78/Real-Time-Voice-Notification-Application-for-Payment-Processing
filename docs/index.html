@@ -459,6 +459,14 @@
 
   // พูดด้วยเสียง AI (Gemini TTS) — ถ้าโมดูลยังไม่โหลด/ใช้ไม่ได้ ใช้เสียงระบบเดิม
   function aiSpeak(text) {
+    // ผู้ใช้เลือก "เสียงเครื่อง" ไว้ -> ใช้เสียงระบบทันที ไม่เรียก API
+    // (อ่าน localStorage ตรง ๆ เพื่อให้ทำงานได้แม้ ai-voice.js เวอร์ชันเก่าถูกแคช)
+    var preferSystem = false;
+    try { preferSystem = window.localStorage.getItem('voiceSource') === 'system'; } catch (e) { /* ไม่เป็นไร */ }
+    if (preferSystem) {
+      speakThai(text);
+      return;
+    }
     if (window.AiVoice && window.AiVoice.speak) {
       window.AiVoice.speak(text); // ภายในมี fallback เป็นเสียงระบบให้เอง
     } else {
@@ -716,7 +724,7 @@
   }
 </script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(0,0,0,0.05)]"><div class="grid grid-cols-2 items-center h-16 px-1"><a aria-current="page" class="flex flex-col items-center justify-center h-12 gap-0.5 transition-colors text-primary font-bold" href="index.html"><span class="material-symbols-outlined text-[22px]">verified_user</span><span class="font-label-sm text-label-sm text-center">ตรวจสลิป &amp; เงินเข้า</span></a><a class="flex flex-col items-center justify-center h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" href="settings-voice.html"><span class="material-symbols-outlined text-[22px]">record_voice_over</span><span class="font-label-sm text-label-sm text-center">ตั้งค่าเสียง</span></a></div></nav><script src="js/config.js"></script>
 <script src="js/api.js"></script>
-<script src="js/ai-voice.js"></script>
+<script src="js/ai-voice.js?v=2"></script>
 <script src="js/app.js"></script>
 <script>
   // ลงทะเบียน service worker เพื่อให้ติดตั้งเป็นแอป (PWA/APK) ได้
