@@ -34,6 +34,17 @@
     return d.toLocaleTimeString('th-TH', { hour12: false });
   }
 
+  function fmtDateTime(iso) {
+    if (!iso) return 'ไม่ระบุเวลา';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return 'ไม่ระบุเวลา';
+    var time = d.toLocaleTimeString('th-TH', { hour12: false }) + ' น.';
+    if (isToday(iso)) return 'วันนี้, ' + time;
+    return d.toLocaleDateString('th-TH', {
+      day: '2-digit', month: '2-digit', year: 'numeric'
+    }) + ', ' + time;
+  }
+
   function isToday(iso) {
     if (!iso) return false;
     var d = new Date(iso);
@@ -44,8 +55,8 @@
 
   function cardHtml(r, i) {
     var amount = Number(r.amount) || 0;
-    var time = fmtTime(r.createdAt);
-    var meta = 'เวลา ' + time + ' น.' + (r.ref ? ' &middot; Ref: ' + escapeHtml(r.ref) : '');
+    var meta = escapeHtml(fmtDateTime(r.createdAt)) +
+      (r.ref ? ' &middot; Ref: ' + escapeHtml(r.ref) : '');
     var slipLink = r.fileUrl
       ? '<a class="font-label-sm text-label-sm text-secondary font-bold flex items-center gap-0.5 hover:underline" href="' +
         escapeHtml(r.fileUrl) + '" target="_blank" rel="noopener"><span>ดูไฟล์สลิป</span>' +
@@ -90,7 +101,7 @@
           '</button>' +
           '<button class="h-10 rounded-xl bg-primary-container hover:bg-primary-container/90 text-on-primary-container font-label-md text-label-md font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform" onclick="openRecordModal(' + i + ')">' +
             '<span class="material-symbols-outlined text-[18px]">visibility</span>' +
-            '<span>ดูหลักฐานสลิป</span>' +
+            '<span>' + (r.fileUrl ? 'ดูหลักฐานสลิป' : 'ดูรายละเอียด') + '</span>' +
           '</button>' +
         '</div>' +
       '</article>'
@@ -252,14 +263,28 @@
 
   window.openRecordModal = function (i) {
     var rec = latestRecords[i];
-    if (!rec || typeof openSlipModal !== 'function') return;
+    if (!rec) return;
     var amount = Number(rec.amount) || 0;
+
+    // รายการจาก notification KTB ไม่มีรูปสลิปและไม่ได้ผ่านการตรวจ Mini QR
+    // ห้ามเปิด modal ที่อ้างว่าเป็น "หลักฐานสลิปทางการ"
+    if (!rec.fileUrl) {
+      if (typeof showToast === 'function') {
+        var detail = 'เงินเข้า ' + formatBaht(amount) + ' บาท';
+        if (rec.bank) detail += ' • ' + rec.bank;
+        if (rec.ref) detail += ' • Ref: ' + rec.ref;
+        showToast('รายละเอียดเงินเข้า', detail, false);
+      }
+      return;
+    }
+
+    if (typeof openSlipModal !== 'function') return;
     openSlipModal(
       String(rec.ref || rec.id || ''),
       amount.toFixed(2),
       String(rec.customer || 'ลูกค้า'),
       String(rec.bank || 'ธนาคาร -'),
-      fmtTime(rec.createdAt),
+      fmtDateTime(rec.createdAt),
       rec.note ? 'หมายเหตุ: ' + rec.note : 'ไม่ระบุบัญชีต้นทาง'
     );
   };

@@ -201,8 +201,8 @@
 <section class="flex flex-col gap-space-sm pt-space-xs">
 <div class="flex items-center justify-between">
 <div class="flex items-center gap-2">
-<h3 class="font-title-lg text-title-lg text-on-surface font-bold">สลิปที่ยืนยันล่าสุด</h3>
-<span class="px-2 py-0.5 rounded-full bg-surface-container font-label-sm text-label-sm font-bold text-primary">วันนี้</span>
+<h3 class="font-title-lg text-title-lg text-on-surface font-bold">รายการเงินเข้าล่าสุด</h3>
+<span class="px-2 py-0.5 rounded-full bg-surface-container font-label-sm text-label-sm font-bold text-primary">ล่าสุด</span>
 </div>
 <div class="flex items-center gap-3">
 <a class="flex items-center gap-1 font-label-sm text-label-sm text-primary font-semibold hover:opacity-80 active:scale-95 transition-transform" href="money-in.html">
@@ -584,7 +584,7 @@
       showToast('ตรวจสอบสลิปสำเร็จ 100%', 'เงินเข้า 150 บาท จาก คุณกิตติศักดิ์ ร. (K PLUS)', false);
 
       setTimeout(() => {
-        openSlipModal('2023112414285192', '150.00', 'คุณกิตติศักดิ์ ร.', 'กสิกรไทย (K PLUS)', '14:28:45', 'xxx-x-x1482-9');
+        openSlipModal('2023112414285192', '150.00', 'คุณกิตติศักดิ์ ร.', 'กสิกรไทย (K PLUS)', 'วันนี้, 14:28:45 น.', 'xxx-x-x1482-9');
       }, 450);
     }, 1100);
   }
@@ -666,7 +666,7 @@
     document.getElementById('modalAmount').innerText = '฿' + amount;
     document.getElementById('modalCustomerName').innerText = customer;
     document.getElementById('modalBankName').innerText = bank;
-    document.getElementById('modalTimestamp').innerText = 'วันนี้, ' + time + ' น.';
+    document.getElementById('modalTimestamp').innerText = time;
     document.getElementById('modalAccountFrom').innerText = account;
     
     const modal = document.getElementById('slipEvidenceModal');
@@ -737,7 +737,7 @@
 </script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(0,0,0,0.05)]"><div class="grid grid-cols-2 items-center h-16 px-1"><a aria-current="page" class="flex flex-col items-center justify-center h-12 gap-0.5 transition-colors text-primary font-bold" href="index.html"><span class="material-symbols-outlined text-[22px]">verified_user</span><span class="font-label-sm text-label-sm text-center">ตรวจสลิป &amp; เงินเข้า</span></a><a class="flex flex-col items-center justify-center h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" href="settings-voice.html"><span class="material-symbols-outlined text-[22px]">record_voice_over</span><span class="font-label-sm text-label-sm text-center">ตั้งค่าเสียง</span></a></div></nav><script src="js/config.js"></script>
 <script src="js/api.js"></script>
 <script src="js/ai-voice.js?v=2"></script>
-<script src="js/app.js?v=6"></script>
+<script src="js/app.js?v=7"></script>
 <script>
   // ลงทะเบียน service worker เพื่อให้ติดตั้งเป็นแอป (PWA/APK) ได้
   if ('serviceWorker' in navigator) {
