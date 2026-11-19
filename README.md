@@ -256,9 +256,9 @@ POST action=notify  + token  ──────────────► Apps 
 | รายการ | ค่า |
 |---|---|
 | Package ID | `th.coffeesukjai.slipverify` (ตัวเดียวกับแอปหลัก — ติดตั้งทับรุ่น 1.0.0 ได้เลย) |
-| Version | 1.2.0 (versionCode 4) |
+| Version | 1.2.1 (versionCode 5) |
 | Android ที่รองรับ | 7.0 ขึ้นไป (minSdk 24, targetSdk 34) |
-| ไฟล์ติดตั้ง | `Documents\coffee-slip-apk\kaafae-sukjai-v1.2.0.apk` (~41 KB) |
+| ไฟล์ติดตั้ง | `Documents\coffee-slip-apk\kaafae-sukjai-v1.2.1.apk` (~41 KB) |
 | ซอร์สโค้ด | `Documents\coffee-slip-apk\app-merged\` — **อยู่นอก repo นี้** (มี token ฝังอยู่) |
 | build ใหม่ | `powershell -ExecutionPolicy Bypass -File .\build.ps1` (ไม่ใช้ Gradle, ใช้ JDK 17 + build-tools 36.1.0) |
 
@@ -277,9 +277,13 @@ POST action=notify  + token  ──────────────► Apps 
 > หน้าเว็บถามผ่าน `AndroidVoice.wasAnnounced(ref)` → **ไม่พูดซ้ำ** แค่แสดงการ์ด + ยอดรวมวันนี้
 > หน้าเว็บยังซิงก์เองทุก 8 วินาที และซิงก์ทันทีเมื่อกลับเข้าหน้า / เน็ตกลับมา / สลับแอปกลับมา
 
+> **1.2.1 — กันยอดหายเมื่อเน็ตสะดุด:** ตัวอ่านลองส่งใหม่อัตโนมัติสูงสุด 3 ครั้งด้วย `ref` เดิม
+> ฝั่ง backend ใช้ `LockService` ป้องกัน request พร้อมกันและทำเครื่องหมาย dedupe หลังเขียน Sheets สำเร็จเท่านั้น
+> ถ้ารอบแรกบันทึกสำเร็จแต่คำตอบขาดหาย รอบ retry ที่ตอบ `duplicate` ยังประกาศเสียงหนึ่งครั้งโดยไม่เพิ่มยอดซ้ำ
+
 ### วิธีติดตั้ง (ทำครั้งเดียว)
 
-1. คัดลอก `kaafae-sukjai-v1.2.0.apk` ไปที่มือถือเคาน์เตอร์ แล้วเปิดไฟล์ → ติดตั้งทับรุ่นเดิมได้เลย
+1. คัดลอก `kaafae-sukjai-v1.2.1.apk` ไปที่มือถือเคาน์เตอร์ แล้วเปิดไฟล์ → ติดตั้งทับรุ่นเดิมได้เลย
 2. เปิดแอป → ครั้งแรกจะเด้งหน้า **ตัวรับเงินเข้า** อัตโนมัติ
 3. ถ้าเป็น Android 13 ขึ้นไป: กด **"① เปิดข้อมูลแอป"** → ⋮ มุมขวาบน → **"อนุญาตการตั้งค่าที่จำกัด"**
    (ถ้าไม่มีเมนูนี้ ข้ามได้ — บางรุ่นไม่ต้องอนุญาต)
@@ -324,10 +328,10 @@ POST action=notify  + token  ──────────────► Apps 
 | รายการ | ค่า |
 |---|---|
 | Package ID | `th.coffeesukjai.slipverify` |
-| Version | 1.2.0 (versionCode 4) |
+| Version | 1.2.1 (versionCode 5) |
 | Android ที่รองรับ | 7.0 ขึ้นไป (minSdk 24, targetSdk 34) |
 | URL ที่เปิด | `https://smartzzz78.github.io/sheet-drive-app/index.html` |
-| ไฟล์ติดตั้ง | `Documents\coffee-slip-apk\kaafae-sukjai-v1.2.0.apk` (~41 KB) |
+| ไฟล์ติดตั้ง | `Documents\coffee-slip-apk\kaafae-sukjai-v1.2.1.apk` (~41 KB) |
 | ซอร์สโค้ด | `Documents\coffee-slip-apk\app-merged\` (นอก repo) |
 
 - รุ่น 1.0.0 (TWA / Chrome engine) ถูกแทนที่แล้ว — เก็บ `coffee-slip-v1.0.0.apk` ไว้เป็นรุ่นย้อนกลับได้

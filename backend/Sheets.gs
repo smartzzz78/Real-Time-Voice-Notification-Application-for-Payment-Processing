@@ -223,7 +223,7 @@ function createRecord_(payload) {
   payload = payload || {};
 
   var amount = Number(payload.amount);
-  if (!amount || amount <= 0) {
+  if (!isFinite(amount) || amount <= 0) {
     throw new Error('กรุณาระบุยอดเงิน (มากกว่า 0)');
   }
 

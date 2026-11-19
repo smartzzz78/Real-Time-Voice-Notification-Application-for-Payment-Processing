@@ -40,33 +40,45 @@ function notifyRecord_(payload) {
     return { dryRun: true, ok: true, amount: amount };
   }
 
-  var cache = CacheService.getScriptCache();
-
-  var minuteKey = 'notify-rate-' + Math.floor(Date.now() / 60000);
-  var used = Number(cache.get(minuteKey) || 0);
-  if (used >= NOTIFY_MAX_PER_MINUTE) {
-    throw new Error('มีรายการเข้ามาถี่เกินไป กรุณารอสักครู่');
-  }
-  cache.put(minuteKey, String(used + 1), 120);
-
   var ref = String(payload.ref || '').trim().slice(0, 80);
-  if (ref) {
-    var dupKey = 'notify-ref-' + ref;
-    if (cache.get(dupKey)) {
+  var cache = CacheService.getScriptCache();
+  var lock = LockService.getScriptLock();
+
+  // กัน notification เดียวกันเข้าพร้อมกัน 2 request:
+  // cache อย่างเดียวไม่ atomic — ทั้งสอง request อาจเช็กว่า "ยังไม่มี" พร้อมกันได้
+  if (!lock.tryLock(10000)) {
+    throw new Error('ระบบกำลังบันทึกรายการอื่น กรุณาลองใหม่');
+  }
+
+  try {
+    var minuteKey = 'notify-rate-' + Math.floor(Date.now() / 60000);
+    var used = Number(cache.get(minuteKey) || 0);
+    if (used >= NOTIFY_MAX_PER_MINUTE) {
+      throw new Error('มีรายการเข้ามาถี่เกินไป กรุณารอสักครู่');
+    }
+    cache.put(minuteKey, String(used + 1), 120);
+
+    var dupKey = ref ? 'notify-ref-' + ref : '';
+    if (dupKey && cache.get(dupKey)) {
       return { duplicate: true, record: null };
     }
-    cache.put(dupKey, '1', NOTIFY_DEDUPE_SECONDS);
+
+    var record = createRecord_({
+      ref: ref,
+      customer: String(payload.customer || '').trim(),
+      bank: String(payload.bank || 'กรุงไทย (KTB NEXT)').trim(),
+      amount: amount,
+      note: String(payload.note || 'เงินเข้าอัตโนมัติจาก KTB NEXT').slice(0, 200)
+    });
+
+    // สำคัญ: ทำเครื่องหมายว่าซ้ำ "หลัง" appendRow สำเร็จเท่านั้น
+    // ถ้า Sheets ล้มเหลว request ถัดไปต้องลองบันทึกได้ ไม่ใช่ถูกทิ้งนาน 6 ชั่วโมง
+    if (dupKey) cache.put(dupKey, '1', NOTIFY_DEDUPE_SECONDS);
+
+    return { duplicate: false, record: record };
+  } finally {
+    lock.releaseLock();
   }
-
-  var record = createRecord_({
-    ref: ref,
-    customer: String(payload.customer || '').trim(),
-    bank: String(payload.bank || 'กรุงไทย (KTB NEXT)').trim(),
-    amount: amount,
-    note: String(payload.note || 'เงินเข้าอัตโนมัติจาก KTB NEXT').slice(0, 200)
-  });
-
-  return { duplicate: false, record: record };
 }
 
 /**

@@ -291,8 +291,10 @@
   function refresh() {
     if (inFlight) return Promise.resolve();
     inFlight = true;
+    var errors = [];
 
     var listRequest = window.Api.request('list').then(applyRecords).catch(function (err) {
+      errors.push({ action: 'list', error: err });
       console.warn('ดึงข้อมูลจาก Apps Script ไม่สำเร็จ:', err && err.message ? err.message : err);
       var title = document.getElementById('voiceBannerTitle');
       if (title && !initialized) {
@@ -300,7 +302,9 @@
         var status = document.getElementById('voiceStatusText');
         if (status) status.innerText = '"' + (err && err.message ? err.message : 'ตรวจสอบการเชื่อมต่อ API') + '"';
       }
-      initialized = true;
+      // ห้ามตั้ง initialized=true ตรงนี้:
+      // ถ้าเปิดแอปตอนออฟไลน์ แล้ว request ครั้งแรกพัง การเชื่อมต่อครั้งถัดไป
+      // จะมองรายการเก่าทั้งหมดเป็น "รายการใหม่" และประกาศย้อนหลังหลายรายการ
     });
 
     var epochAtStart = summaryEpoch;
@@ -312,15 +316,17 @@
       return summary;
     }).catch(function (err) {
       if (epochAtStart !== summaryEpoch) return null;
+      errors.push({ action: 'summary', error: err });
       // deployment เก่ายังไม่มี action นี้ — ใช้ยอดที่คำนวณจากรายการแทน
       lastSummary = null;
+      updateStats(latestRecords);
       console.warn('ดึงยอดรวมวันนี้ไม่สำเร็จ:', err && err.message ? err.message : err);
       return null;
     });
 
     return Promise.all([listRequest, summaryRequest]).then(function (result) {
       inFlight = false;
-      return result;
+      return { result: result, errors: errors };
     }, function (err) {
       inFlight = false;
       throw err;
@@ -336,11 +342,25 @@
     var icon = document.getElementById('syncIcon');
     if (icon) icon.classList.add('animate-spin');
 
-    refresh().then(function () {
+    refresh().then(function (outcome) {
       if (icon) icon.classList.remove('animate-spin');
+      if (outcome && outcome.errors && outcome.errors.length > 0) {
+        var first = outcome.errors[0].error;
+        if (typeof showToast === 'function') {
+          showToast('ซิงก์ไม่สำเร็จ',
+            first && first.message ? first.message : 'ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่', true);
+        }
+        return;
+      }
       if (typeof playHarmonicDingDong === 'function') playHarmonicDingDong();
       if (typeof showToast === 'function') {
         showToast('ซิงก์สำเร็จ', 'ดึงรายการเงินเข้าล่าสุดจาก Google Sheets แล้ว', false);
+      }
+    }).catch(function (err) {
+      if (icon) icon.classList.remove('animate-spin');
+      if (typeof showToast === 'function') {
+        showToast('ซิงก์ไม่สำเร็จ',
+          err && err.message ? err.message : 'ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่', true);
       }
     });
   };
