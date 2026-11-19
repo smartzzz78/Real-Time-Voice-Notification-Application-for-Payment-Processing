@@ -335,7 +335,7 @@ POST action=notify  + token  ──────────────► Apps 
 
 - รุ่น 1.0.0 (TWA / Chrome engine) ถูกแทนที่แล้ว — เก็บ `coffee-slip-v1.0.0.apk` ไว้เป็นรุ่นย้อนกลับได้
 - ไฟล์ APK / AAB / keystore / รหัสผ่าน **ไม่ได้อยู่ใน repo นี้** (อยู่ใน `.gitignore`)
-  เก็บแยกที่ `Documents\coffee-slip-apk\` พร้อม `README-APK.txt`
+  เก็บแยกที่ `Documents\PayVox\` พร้อม `README-APK.txt`
 - **keystore ห้ามหายและห้าม commit** — ถ้าหายจะอัปเดตทับแอปเดิมไม่ได้อีก
 - ไม่ต้องใช้ `assetlinks.json` แล้ว (ไม่ใช่ TWA) แต่ยังเก็บไว้ได้ไม่เสียหาย
 - WebView ในแอปตั้ง `mediaPlaybackRequiresUserGesture(false)` → เสียงกริ่ง/เสียง AI เล่นเองได้
@@ -344,7 +344,7 @@ POST action=notify  + token  ──────────────► Apps 
   (แก้โค้ดเว็บไม่ต้อง build ใหม่):
 
 ```powershell
-cd "C:\Users\PC22\Documents\coffee-slip-apk\app-merged"
+cd "C:\Users\PC22\Documents\PayVox\app-merged"
 powershell -ExecutionPolicy Bypass -File .\make-icon.ps1   # เฉพาะเมื่ออยากเปลี่ยนไอคอน
 powershell -ExecutionPolicy Bypass -File .\build.ps1
 ```

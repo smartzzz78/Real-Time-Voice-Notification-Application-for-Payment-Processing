@@ -3,7 +3,7 @@ Add-Type -AssemblyName System.Drawing
 
 $repo = Split-Path -Parent $PSScriptRoot
 $icons = Join-Path $repo 'docs\icons'
-$apkRes = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'coffee-slip-apk\app-merged\res'
+$apkRes = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'PayVox\app-merged\res'
 New-Item -ItemType Directory -Force -Path $icons | Out-Null
 
 function New-PayVoxMaster {
