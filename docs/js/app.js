@@ -143,16 +143,25 @@
   function renderTodayTotal(summary) {
     var amountEl = document.getElementById('todayTotalAmount');
     var subEl = document.getElementById('todayTotalSub');
+    var undoBtn = document.getElementById('totalUndoBtn');
     if (!amountEl || !summary) return;
 
     var total = Number(summary.todayTotal) || 0;
     var count = Number(summary.todayCount) || 0;
+    // เวลาที่เริ่มนับใหม่ (มีเฉพาะเมื่อเพิ่งกดรีเซ็ทกลางวัน)
+    var since = summary.resetActive && summary.resetAtLocal ? summary.resetAtLocal : '';
 
     amountEl.innerText = '฿' + formatMoney(total);
     if (subEl) {
-      subEl.innerText = count > 0
-        ? count + ' รายการวันนี้'
-        : 'ยังไม่มีรายการวันนี้';
+      var countText = count > 0 ? count + ' รายการ' : 'ยังไม่มีรายการ';
+      subEl.innerText = since
+        ? countText + ' • นับตั้งแต่ ' + since + ' น.'
+        : countText + 'วันนี้';
+    }
+
+    if (undoBtn) {
+      if (since) undoBtn.classList.remove('hidden');
+      else undoBtn.classList.add('hidden');
     }
   }
 
@@ -326,6 +335,72 @@
       if (typeof showToast === 'function') {
         showToast('ซิงก์สำเร็จ', 'ดึงรายการเงินเข้าล่าสุดจาก Google Sheets แล้ว', false);
       }
+    });
+  };
+
+  /* ---------- รีเซ็ทยอดเงินรวมวันนี้ ---------- */
+
+  var resetConfirmUntil = 0;   // ต้องกด 2 ครั้งใน 4 วินาที (กันกดพลาด)
+  var resetBusy = false;
+
+  function setResetLabel(text) {
+    var btn = document.getElementById('totalResetBtn');
+    if (!btn) return;
+    btn.innerHTML = '<span class="material-symbols-outlined text-[14px]">restart_alt</span><span>' + text + '</span>';
+  }
+
+  window.resetTodayTotal = function () {
+    if (resetBusy) return;
+
+    var now = Date.now();
+    if (now > resetConfirmUntil) {
+      // กดครั้งแรก: ขอคอนเฟิร์ม (ไม่ใช้ confirm() เพราะ WebView ไม่รองรับ)
+      resetConfirmUntil = now + 4000;
+      setResetLabel('กดอีกครั้ง');
+      setTimeout(function () {
+        if (Date.now() >= resetConfirmUntil) setResetLabel('รีเซ็ท');
+      }, 4300);
+      return;
+    }
+
+    resetConfirmUntil = 0;
+    resetBusy = true;
+    setResetLabel('กำลังรีเซ็ท…');
+
+    window.Api.request('resetSummary', {}).then(function (summary) {
+      lastSummary = summary;
+      renderTodayTotal(summary);
+      if (typeof showToast === 'function') {
+        showToast('รีเซ็ทยอดรวมแล้ว',
+          'เริ่มนับใหม่ตั้งแต่ ' + (summary.resetAtLocal || '') + ' น. (รายการเก่ายังอยู่ในรายการด้านล่าง)', false);
+      }
+    }).catch(function (err) {
+      if (typeof showToast === 'function') {
+        showToast('รีเซ็ทไม่สำเร็จ', err && err.message ? err.message : 'ลองใหม่อีกครั้ง', true);
+      }
+      if (lastSummary) renderTodayTotal(lastSummary);
+    }).then(function () {
+      resetBusy = false;
+      setResetLabel('รีเซ็ท');
+    });
+  };
+
+  window.undoTodayTotal = function () {
+    if (resetBusy) return;
+    resetBusy = true;
+
+    window.Api.request('resetSummary', { undo: true }).then(function (summary) {
+      lastSummary = summary;
+      renderTodayTotal(summary);
+      if (typeof showToast === 'function') {
+        showToast('คืนยอดรวมแล้ว', 'กลับไปนับยอดทั้งวันตามเดิม', false);
+      }
+    }).catch(function (err) {
+      if (typeof showToast === 'function') {
+        showToast('คืนค่าไม่สำเร็จ', err && err.message ? err.message : 'ลองใหม่อีกครั้ง', true);
+      }
+    }).then(function () {
+      resetBusy = false;
     });
   };
 

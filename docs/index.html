@@ -174,15 +174,27 @@
 </button>
 </div>
 </section>
-<!-- Today's money-in total (คำนวณจากข้อมูลจริงในชีต) -->
-<section class="flex items-center justify-between p-space-md rounded-2xl bg-primary text-on-primary shadow-md">
+<!-- Today's money-in total (คำนวณจากข้อมูลจริงในชีต • รีเซ็ทเองทุกเที่ยงคืน) -->
+<section class="flex items-center justify-between gap-space-sm p-space-md rounded-2xl bg-primary text-on-primary shadow-md">
 <div class="flex flex-col min-w-0">
 <span class="font-label-md text-label-md text-on-primary/80">ยอดเงินรวมวันนี้</span>
 <span class="font-display-xl-mobile text-display-xl-mobile font-bold leading-tight" id="todayTotalAmount">฿0.00</span>
 <span class="font-label-sm text-label-sm text-primary-fixed" id="todayTotalSub">กำลังโหลด…</span>
 </div>
-<div class="w-12 h-12 rounded-full bg-on-primary/15 flex items-center justify-center shrink-0">
+<div class="flex flex-col items-center gap-1.5 shrink-0">
+<div class="w-12 h-12 rounded-full bg-on-primary/15 flex items-center justify-center">
 <span class="material-symbols-outlined text-[26px]">account_balance_wallet</span>
+</div>
+<div class="flex items-center gap-1">
+<button aria-label="รีเซ็ทยอดเงินรวมวันนี้" class="px-2 py-1 rounded-lg bg-on-primary/15 font-label-sm text-label-sm font-semibold active:scale-95 transition-transform flex items-center gap-0.5" id="totalResetBtn" onclick="resetTodayTotal()" title="เริ่มนับยอดใหม่ตั้งแต่ตอนนี้ (รีเซ็ทเองทุกเที่ยงคืนอยู่แล้ว)">
+<span class="material-symbols-outlined text-[14px]">restart_alt</span>
+<span>รีเซ็ท</span>
+</button>
+<button aria-label="คืนค่ายอดเงินรวมวันนี้" class="hidden flex px-2 py-1 rounded-lg bg-on-primary/15 font-label-sm text-label-sm font-semibold active:scale-95 transition-transform items-center gap-0.5" id="totalUndoBtn" onclick="undoTodayTotal()" title="ล้างการรีเซ็ท กลับไปนับยอดทั้งวันตามเดิม">
+<span class="material-symbols-outlined text-[14px]">undo</span>
+<span>คืนค่า</span>
+</button>
+</div>
 </div>
 </section>
 <!-- Real-time Transaction Verification Feed Header -->
@@ -725,7 +737,7 @@
 </script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(0,0,0,0.05)]"><div class="grid grid-cols-2 items-center h-16 px-1"><a aria-current="page" class="flex flex-col items-center justify-center h-12 gap-0.5 transition-colors text-primary font-bold" href="index.html"><span class="material-symbols-outlined text-[22px]">verified_user</span><span class="font-label-sm text-label-sm text-center">ตรวจสลิป &amp; เงินเข้า</span></a><a class="flex flex-col items-center justify-center h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" href="settings-voice.html"><span class="material-symbols-outlined text-[22px]">record_voice_over</span><span class="font-label-sm text-label-sm text-center">ตั้งค่าเสียง</span></a></div></nav><script src="js/config.js"></script>
 <script src="js/api.js"></script>
 <script src="js/ai-voice.js?v=2"></script>
-<script src="js/app.js?v=3"></script>
+<script src="js/app.js?v=4"></script>
 <script>
   // ลงทะเบียน service worker เพื่อให้ติดตั้งเป็นแอป (PWA/APK) ได้
   if ('serviceWorker' in navigator) {

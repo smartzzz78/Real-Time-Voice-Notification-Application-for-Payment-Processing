@@ -8,6 +8,8 @@
  * รองรับ action:
  *   GET  ?action=ping                              -> ตรวจสอบระบบ + ข้อมูลชีต
  *   GET  ?action=list[&limit=100]                  -> รายการเงินเข้าล่าสุด
+ *   GET  ?action=summary                           -> ยอดรวมวันนี้ + ยอดรวมทั้งหมด
+ *   POST { action: 'resetSummary', payload: {} }   -> เริ่มนับยอดวันนี้ใหม่ (undo:true = คืนค่า)
  *   POST { action: 'create', payload: {...} }      -> บันทึกรายการเงินเข้า
  *   POST { action: 'upload', payload: {...} }      -> อัปโหลดรูปสลิปขึ้น Drive
  *   GET  ?action=voiceConfig                       -> สถานะคีย์ AI Voice + โหมดเสียง
@@ -45,6 +47,9 @@ function handleRequest_(e, method) {
         break;
       case 'summary':
         data = summarizeRecords_();
+        break;
+      case 'resetSummary':
+        data = resetSummary_(payload);
         break;
       case 'create':
         data = createRecord_(payload);

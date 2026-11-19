@@ -110,25 +110,83 @@ function listRecords_(limitParam) {
   return records.reverse().slice(0, limit);
 }
 
+/* ---------- รีเซ็ทยอดรวมวันนี้ (เก็บเวลาไว้ใน Script Properties) ---------- */
+
+var TOTAL_RESET_AT_PROP = 'TOTAL_RESET_AT';
+
+/**
+ * เวลาที่ผู้ใช้กด "รีเซ็ท" ครั้งล่าสุด (หรือ null ถ้าไม่เคย/เพิ่งคืนค่า)
+ * หมายเหตุ: ยอดรวมยังรีเซ็ทเองทุกเที่ยงคืนตามเวลาไทยอยู่แล้ว
+ * ค่านี้ใช้เมื่อต้องการรีเซ็ทกลางวัน (เช่น เริ่มรอบใหม่หลังปิดร้าน)
+ */
+function getTotalResetAt_() {
+  var raw = PropertiesService.getScriptProperties().getProperty(TOTAL_RESET_AT_PROP);
+  if (!raw) return null;
+  var d = new Date(raw);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+/**
+ * action=resetSummary
+ *   {}            -> เริ่มนับยอดรวมวันนี้ใหม่ตั้งแต่ "ตอนนี้"
+ *   { undo: true } -> ล้างการรีเซ็ท กลับไปนับยอดทั้งวันตามเดิม
+ * คืนค่าสรุปชุดเดียวกับ action=summary เพื่อให้หน้าเว็บอัปเดตได้ทันที
+ */
+function resetSummary_(payload) {
+  payload = payload || {};
+  var props = PropertiesService.getScriptProperties();
+  var undo = payload.undo === true || String(payload.undo) === 'true';
+
+  if (undo) {
+    props.deleteProperty(TOTAL_RESET_AT_PROP);
+  } else {
+    props.setProperty(TOTAL_RESET_AT_PROP, new Date().toISOString());
+  }
+
+  return summarizeRecords_();
+}
+
 /**
  * สรุปยอดเงิน: ยอดรวมของวันนี้ + ยอดรวมทั้งหมด (คำนวณฝั่งเซิร์ฟเวอร์)
  * ใช้กับ action=summary เพื่อให้ยอดรวมถูกต้องแม้หน้าเว็บดึงมาแสดงแค่บางรายการ
+ *
+ * ยอด "วันนี้" = รายการของวันนี้ (เวลาไทย) ที่เกิดหลังเวลาตัดต้น
+ * โดยเวลาตัดต้น = max(เที่ยงคืนของวันนี้, เวลาที่กดรีเซ็ท)
+ * => รีเซ็ทเองทุกเที่ยงคืน และกดรีเซ็ทกลางวันได้ด้วย
  */
 function summarizeRecords_() {
   var sheet = getSheet_();
   var lastRow = sheet.getLastRow();
+  var tz = Session.getScriptTimeZone();
+  var now = new Date();
+
+  var todayParts = Utilities.formatDate(now, tz, 'yyyy-MM-dd').split('-');
+  var todayStart = new Date(
+    Number(todayParts[0]),
+    Number(todayParts[1]) - 1,
+    Number(todayParts[2]),
+    0, 0, 0, 0
+  );
+
+  var resetAt = getTotalResetAt_();
+  // ถ้ารีเซ็ทไว้เมื่อวาน/ก่อนหน้า ถือว่าเที่ยงคืนของวันนี้ตัดยอดไปแล้ว
+  var resetActive = !!(resetAt && resetAt.getTime() > todayStart.getTime());
+  var cutoff = resetActive ? resetAt : todayStart;
 
   var summary = {
-    date: Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'),
+    date: todayParts.join('-'),
     todayCount: 0,
     todayTotal: 0,
     totalCount: 0,
-    totalAmount: 0
+    totalAmount: 0,
+    resetAt: resetActive ? resetAt.toISOString() : '',
+    resetAtLocal: resetActive ? Utilities.formatDate(resetAt, tz, 'HH:mm') : '',
+    resetActive: resetActive,
+    todayFrom: cutoff.toISOString()
   };
 
   if (lastRow < 2) return summary;
 
-  var tz = Session.getScriptTimeZone();
   var values = sheet.getRange(2, 1, lastRow - 1, HEADERS.length).getValues();
 
   for (var i = 0; i < values.length; i++) {
@@ -147,11 +205,13 @@ function summarizeRecords_() {
     summary.totalAmount += amount;
 
     var created = row[8];
-    if (created instanceof Date) {
-      if (Utilities.formatDate(created, tz, 'yyyy-MM-dd') === summary.date) {
-        summary.todayCount += 1;
-        summary.todayTotal += amount;
-      }
+    var createdDate = created instanceof Date ? created : (created ? new Date(created) : null);
+    if (!createdDate || isNaN(createdDate.getTime())) continue;
+
+    var sameDay = Utilities.formatDate(createdDate, tz, 'yyyy-MM-dd') === summary.date;
+    if (sameDay && createdDate.getTime() >= cutoff.getTime()) {
+      summary.todayCount += 1;
+      summary.todayTotal += amount;
     }
   }
 

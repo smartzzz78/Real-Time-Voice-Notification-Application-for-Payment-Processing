@@ -166,7 +166,8 @@ gh api -X POST repos/{owner}/sheet-drive-app/pages `
 |---|---|---|---|
 | `ping` | GET | `?action=ping` | `{ ok, time, spreadsheetId, sheetName, headers, rowCount }` (สร้าง header ให้อัตโนมัติ) |
 | `list` | GET | `?action=list` (option `&limit=100`) | รายการเงินเข้าล่าสุด (ใหม่สุดก่อน) |
-| `summary` | GET | `?action=summary` | `{ date, todayCount, todayTotal, totalCount, totalAmount }` — ยอดรวมวันนี้/ทั้งหมด (คำนวณฝั่งเซิร์ฟเวอร์ ใช้กับยอดเงินรวมบนหน้าจอ) |
+| `summary` | GET | `?action=summary` | `{ date, todayCount, todayTotal, totalCount, totalAmount, resetActive, resetAt, resetAtLocal, todayFrom }` — ยอดรวมวันนี้/ทั้งหมด (คำนวณฝั่งเซิร์ฟเวอร์ ใช้กับยอดเงินรวมบนหน้าจอ) |
+| `resetSummary` | POST | `{ action:'resetSummary', payload:{} }` (หรือ `payload:{ undo:true }` เพื่อคืนค่า) | เริ่มนับยอดวันนี้ใหม่ตั้งแต่ตอนนี้ / ล้างการรีเซ็ท — คืนสรุปชุดเดียวกับ `summary` |
 | `create` | POST | `{ action:'create', payload:{ amount, customer, bank, ref, note, fileName, fileUrl } }` | record ที่สร้าง |
 | `notify` | POST | `{ action:'notify', payload:{ token, amount, ref?, customer?, bank?, note?, dryRun? } }` | รับเงินเข้าอัตโนมัติจากแอป Android (ดูหัวข้อ "เงินเข้าอัตโนมัติ") — `{ duplicate, record }` |
 | `upload` | POST | `{ action:'upload', payload:{ filename, mimeType, base64 } }` | ข้อมูลไฟล์บน Drive |
@@ -305,8 +306,13 @@ POST action=notify  + token  ──────────────► Apps 
   → ถูกต้องแม้หน้าเว็บแสดงรายการเพียง 100 รายการล่าสุด
 - นับเฉพาะรายการที่ `createdAt` เป็นวันนี้ พร้อมจำนวนรายการกำกับ ("N รายการวันนี้")
 - อัปเดตทุกครั้งที่ poll (8 วินาที) และเมื่อกด "ซิงก์ธนาคาร"
+- **รีเซ็ทเองอัตโนมัติทุกเที่ยงคืน (Asia/Bangkok)** — ไม่ต้องทำอะไร
+- **รีเซ็ทกลางวันได้:** กดปุ่ม `รีเซ็ท` ที่การ์ดยอดรวม → **กดอีกครั้ง**ภายใน 4 วินาทีเพื่อยืนยัน (กันกดพลาด)
+  → ยอดและจำนวนรายการเริ่มนับใหม่ตั้งแต่ตอนนั้น ข้อความใต้ยอดจะแสดง "นับตั้งแต่ HH:mm น."
+- **คืนค่าได้:** หลังรีเซ็ทจะมีปุ่ม `คืนค่า` (undo) กดแล้วกลับไปนับยอดทั้งวันตามเดิม
+- เวลารีเซ็ทเก็บใน Script Properties `TOTAL_RESET_AT` (ฝั่งเซิร์ฟเวอร์) และ **ไม่ลบ/แก้ข้อมูลในชีต**
+  → รายการเงินเข้าในฟีดด้านล่างยังอยู่ครบ เสียงยังพูดแค่ "เงินเข้า … บาท" ตามเดิม
 - ถ้า backend รุ่นเก่ายังไม่มี `summary` หน้าเว็บจะคำนวณยอดจากรายการที่ดึงมาให้แทนอัตโนมัติ
-- เป็นการแสดงบนจอเท่านั้น — เสียงยังพูดแค่ "เงินเข้า … บาท" ตามเดิม
 
 ## แอป Android (APK)
 
