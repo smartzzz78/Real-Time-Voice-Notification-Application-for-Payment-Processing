@@ -161,11 +161,10 @@ function summarizeRecords_() {
   var now = new Date();
 
   var todayParts = Utilities.formatDate(now, tz, 'yyyy-MM-dd').split('-');
-  var todayStart = new Date(
-    Number(todayParts[0]),
-    Number(todayParts[1]) - 1,
-    Number(todayParts[2]),
-    0, 0, 0, 0
+  // ใช้ parseDate เพื่อให้ "เที่ยงคืนวันนี้" ถูกต้องตามเขตเวลาของสคริปต์เสมอ
+  // (new Date(y,m,d) อาจถูกตีความเป็น UTC ถ้า runtime ไม่ได้ใช้เขตเวลาเดียวกัน)
+  var todayStart = Utilities.parseDate(
+    todayParts.join('-') + ' 00:00:00', tz, 'yyyy-MM-dd HH:mm:ss'
   );
 
   var resetAt = getTotalResetAt_();

@@ -134,6 +134,9 @@
   /* ---------- ยอดเงินรวมวันนี้ ---------- */
 
   var lastSummary = null;
+  // เพิ่มทุกครั้งที่กด รีเซ็ท/คืนค่า — กัน response จาก poll ที่ยิงค้างไว้
+  // มาทับยอดใหม่ (poll ทุก 8 วินาที อาจค้างตอนกดปุ่มพอดี)
+  var summaryEpoch = 0;
 
   function formatMoney(value) {
     var n = Number(value) || 0;
@@ -300,11 +303,15 @@
       initialized = true;
     });
 
+    var epochAtStart = summaryEpoch;
     var summaryRequest = window.Api.request('summary').then(function (summary) {
+      // ถ้ามีการรีเซ็ท/คืนค่าระหว่างรอ ให้ข้าม response เก่านี้ไป
+      if (epochAtStart !== summaryEpoch) return summary;
       lastSummary = summary;
       renderTodayTotal(summary);
       return summary;
     }).catch(function (err) {
+      if (epochAtStart !== summaryEpoch) return null;
       // deployment เก่ายังไม่มี action นี้ — ใช้ยอดที่คำนวณจากรายการแทน
       lastSummary = null;
       console.warn('ดึงยอดรวมวันนี้ไม่สำเร็จ:', err && err.message ? err.message : err);
@@ -365,9 +372,12 @@
 
     resetConfirmUntil = 0;
     resetBusy = true;
+    summaryEpoch += 1;
+    var epoch = summaryEpoch;
     setResetLabel('กำลังรีเซ็ท…');
 
     window.Api.request('resetSummary', {}).then(function (summary) {
+      if (epoch !== summaryEpoch) return;
       lastSummary = summary;
       renderTodayTotal(summary);
       if (typeof showToast === 'function') {
@@ -375,6 +385,7 @@
           'เริ่มนับใหม่ตั้งแต่ ' + (summary.resetAtLocal || '') + ' น. (รายการเก่ายังอยู่ในรายการด้านล่าง)', false);
       }
     }).catch(function (err) {
+      if (epoch !== summaryEpoch) return;
       if (typeof showToast === 'function') {
         showToast('รีเซ็ทไม่สำเร็จ', err && err.message ? err.message : 'ลองใหม่อีกครั้ง', true);
       }
@@ -388,14 +399,18 @@
   window.undoTodayTotal = function () {
     if (resetBusy) return;
     resetBusy = true;
+    summaryEpoch += 1;
+    var epoch = summaryEpoch;
 
     window.Api.request('resetSummary', { undo: true }).then(function (summary) {
+      if (epoch !== summaryEpoch) return;
       lastSummary = summary;
       renderTodayTotal(summary);
       if (typeof showToast === 'function') {
         showToast('คืนยอดรวมแล้ว', 'กลับไปนับยอดทั้งวันตามเดิม', false);
       }
     }).catch(function (err) {
+      if (epoch !== summaryEpoch) return;
       if (typeof showToast === 'function') {
         showToast('คืนค่าไม่สำเร็จ', err && err.message ? err.message : 'ลองใหม่อีกครั้ง', true);
       }
