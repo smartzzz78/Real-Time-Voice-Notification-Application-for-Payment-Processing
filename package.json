@@ -1,12 +1,12 @@
 {
   "name": "real-time-voice-notification-application-for-payment-processing",
-  "version": "0.1.0",
+  "version": "1.2.3",
   "private": true,
-  "description": "Vanilla JS frontend on GitHub Pages + Google Apps Script backend using Google Sheets and Drive",
+  "description": "PayVox real-time voice notifications for payment processing",
   "scripts": {
     "serve": "npx --yes serve docs -l 3000",
     "gas:login": "clasp login",
-    "gas:create": "cd backend && clasp create --type webapp --title \"Sheet Drive App\"",
+    "gas:create": "cd backend && clasp create --type webapp --title \"PayVox\"",
     "gas:push": "cd backend && clasp push",
     "gas:deploy": "cd backend && clasp deploy --description \"deploy\"",
     "gas:open": "cd backend && clasp open",

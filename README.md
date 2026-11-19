@@ -1,6 +1,6 @@
-# กาแฟสดสุขใจ (Slip Verify)
+# PayVox
 
-แอปหน้าร้านสำหรับร้านกาแฟ ใช้ **GitHub Pages** เป็น frontend และ **Google Apps Script** เป็น backend
+แอปแจ้งเตือนเงินเข้าแบบเรียลไทม์ด้วยเสียง พร้อมฟีดรายการและเครื่องมือตรวจสลิป ใช้ **GitHub Pages** เป็น frontend และ **Google Apps Script** เป็น backend
 โดยใช้ **Google Sheets** เป็นฐานข้อมูล และ **Google Drive** เก็บไฟล์แนบ
 
 แอปเหลือ 3 หน้าที่ใช้จริง (เมนูล่างมี 2 แท็บ):
@@ -23,7 +23,6 @@
 |---|---|
 | GitHub repo | https://github.com/smartzzz78/Real-Time-Voice-Notification-Application-for-Payment-Processing |
 | เว็บไซต์ (GitHub Pages) | https://smartzzz78.github.io/Real-Time-Voice-Notification-Application-for-Payment-Processing/ |
-| Apps Script editor | https://script.google.com/d/1t4YAMXsn4pqoQa8jigMv1xrNVvN1iGYKn7v7IrjWXijtryUvjvsoFuxh/edit |
 | Web App endpoint | https://script.google.com/macros/s/AKfycbxvcU7CAxGGqlEU5mZxl_OIrbDIPqM7fv8Jen--ijrApeZWOlbRZrkBhAsyDm-xja7O/exec |
 
 ```
@@ -108,7 +107,7 @@ clasp deploy --description "v1"
 
 **จำเป็นต้องอนุญาตสคริปต์ 1 ครั้ง** (deploy ผ่าน clasp/API จะข้ามขั้นตอนนี้ ทำให้เว็บตอบ 403 "ต้องมีสิทธิ์เข้าถึง"):
 
-1. เปิด **Web App URL** ด้วยเบราว์เซอร์ที่ล็อกอินบัญชีเจ้าของ (smartzzz2851@gmail.com)
+1. เปิด **Web App URL** ด้วยเบราว์เซอร์ที่ล็อกอินบัญชีเจ้าของ Apps Script
 2. จะเจอหน้าขอสิทธิ์ → เลือกบัญชี → **Advanced** → **Go to project (unsafe)** → **Allow**
 3. เสร็จแล้วหน้าเว็บจะแสดง JSON ของ `ping` — แปลว่าใช้ได้แล้ว
 
@@ -256,10 +255,10 @@ POST action=notify  + token  ──────────────► Apps 
 | รายการ | ค่า |
 |---|---|
 | Package ID | `th.coffeesukjai.slipverify` (ตัวเดียวกับแอปหลัก — ติดตั้งทับรุ่น 1.0.0 ได้เลย) |
-| Version | 1.2.2 (versionCode 6) |
+| Version | 1.2.3 (versionCode 7) |
 | Android ที่รองรับ | 7.0 ขึ้นไป (minSdk 24, targetSdk 34) |
-| ไฟล์ติดตั้ง | `Documents\coffee-slip-apk\kaafae-sukjai-v1.2.2.apk` (~41 KB) |
-| ซอร์สโค้ด | `Documents\coffee-slip-apk\app-merged\` — **อยู่นอก repo นี้** (มี token ฝังอยู่) |
+| ไฟล์ติดตั้ง | `payvox-v1.2.3.apk` (เผยแพร่ใน GitHub Releases) |
+| ซอร์ส Android | เก็บเป็นส่วนตัวนอก repository สาธารณะ |
 | build ใหม่ | `powershell -ExecutionPolicy Bypass -File .\build.ps1` (ไม่ใช้ Gradle, ใช้ JDK 17 + build-tools 36.1.0) |
 
 ในแอปเดียวมี: หน้าเว็บเต็มจอ + แถบสถานะบาง ๆ ด้านบน ("ตัวรับเงินเข้า: พร้อม ✓" แตะเพื่อตั้งค่า)
@@ -283,7 +282,7 @@ POST action=notify  + token  ──────────────► Apps 
 
 ### วิธีติดตั้ง (ทำครั้งเดียว)
 
-1. คัดลอก `kaafae-sukjai-v1.2.2.apk` ไปที่มือถือเคาน์เตอร์ แล้วเปิดไฟล์ → ติดตั้งทับรุ่นเดิมได้เลย
+1. ดาวน์โหลด `payvox-v1.2.3.apk` จาก GitHub Releases ไปที่มือถือเคาน์เตอร์ แล้วเปิดไฟล์ → ติดตั้งทับรุ่นเดิมได้เลย
 2. เปิดแอป → ครั้งแรกจะเด้งหน้า **ตัวรับเงินเข้า** อัตโนมัติ
 3. ถ้าเป็น Android 13 ขึ้นไป: กด **"① เปิดข้อมูลแอป"** → ⋮ มุมขวาบน → **"อนุญาตการตั้งค่าที่จำกัด"**
    (ถ้าไม่มีเมนูนี้ ข้ามได้ — บางรุ่นไม่ต้องอนุญาต)
@@ -328,11 +327,11 @@ POST action=notify  + token  ──────────────► Apps 
 | รายการ | ค่า |
 |---|---|
 | Package ID | `th.coffeesukjai.slipverify` |
-| Version | 1.2.2 (versionCode 6) |
+| Version | 1.2.3 (versionCode 7) |
 | Android ที่รองรับ | 7.0 ขึ้นไป (minSdk 24, targetSdk 34) |
 | URL ที่เปิด | `https://smartzzz78.github.io/Real-Time-Voice-Notification-Application-for-Payment-Processing/index.html` |
-| ไฟล์ติดตั้ง | `Documents\coffee-slip-apk\kaafae-sukjai-v1.2.2.apk` (~41 KB) |
-| ซอร์สโค้ด | `Documents\coffee-slip-apk\app-merged\` (นอก repo) |
+| ไฟล์ติดตั้ง | `payvox-v1.2.3.apk` (เผยแพร่ใน GitHub Releases) |
+| ซอร์ส Android | เก็บเป็นส่วนตัวนอก repository สาธารณะ |
 
 - รุ่น 1.0.0 (TWA / Chrome engine) ถูกแทนที่แล้ว — เก็บ `coffee-slip-v1.0.0.apk` ไว้เป็นรุ่นย้อนกลับได้
 - ไฟล์ APK / AAB / keystore / รหัสผ่าน **ไม่ได้อยู่ใน repo นี้** (อยู่ใน `.gitignore`)

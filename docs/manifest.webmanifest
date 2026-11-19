@@ -1,7 +1,7 @@
 {
-  "name": "กาแฟสดสุขใจ — ตรวจสลิป",
-  "short_name": "กาแฟสดสุขใจ",
-  "description": "ตรวจสลิปแท้ ประกาศเสียงเงินเข้า สำหรับร้านกาแฟสดสุขใจ",
+  "name": "PayVox — แจ้งเตือนเงินเข้าด้วยเสียง",
+  "short_name": "PayVox",
+  "description": "แจ้งเตือนเงินเข้าแบบเรียลไทม์ด้วยเสียง พร้อมฟีดรายการและเครื่องมือตรวจสลิป",
   "id": "./",
   "start_url": "./index.html",
   "scope": "./",
@@ -9,7 +9,7 @@
   "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
   "background_color": "#faf8ff",
-  "theme_color": "#6f4e37",
+  "theme_color": "#0050eb",
   "lang": "th",
   "categories": ["business", "finance", "productivity"],
   "icons": [
