@@ -21,8 +21,8 @@
 
 | ส่วน | ลิงก์ |
 |---|---|
-| GitHub repo | https://github.com/smartzzz78/sheet-drive-app |
-| เว็บไซต์ (GitHub Pages) | https://smartzzz78.github.io/sheet-drive-app/ |
+| GitHub repo | https://github.com/smartzzz78/Real-Time-Voice-Notification-Application-for-Payment-Processing |
+| เว็บไซต์ (GitHub Pages) | https://smartzzz78.github.io/Real-Time-Voice-Notification-Application-for-Payment-Processing/ |
 | Apps Script editor | https://script.google.com/d/1t4YAMXsn4pqoQa8jigMv1xrNVvN1iGYKn7v7IrjWXijtryUvjvsoFuxh/edit |
 | Web App endpoint | https://script.google.com/macros/s/AKfycbxvcU7CAxGGqlEU5mZxl_OIrbDIPqM7fv8Jen--ijrApeZWOlbRZrkBhAsyDm-xja7O/exec |
 
@@ -130,19 +130,19 @@ npm run serve
 ## ขั้นตอนที่ 5 — สร้าง GitHub repo + เปิด Pages
 
 ```powershell
-gh repo create sheet-drive-app --public --source=. --remote=origin --push
+gh repo create Real-Time-Voice-Notification-Application-for-Payment-Processing --public --source=. --remote=origin --push
 ```
 
 เปิด GitHub Pages ให้เสิร์ฟจาก `main` / `docs`:
 
 ```powershell
-gh api -X POST repos/{owner}/sheet-drive-app/pages `
+gh api -X POST repos/{owner}/Real-Time-Voice-Notification-Application-for-Payment-Processing/pages `
   -f "source[branch]=main" -f "source[path]=/docs"
 ```
 
 หรือทำผ่านเว็บ: **Settings → Pages → Source: Deploy from a branch → main / docs → Save**
 
-เว็บไซต์จะอยู่ที่ `https://<username>.github.io/sheet-drive-app/`
+เว็บไซต์จะอยู่ที่ `https://<username>.github.io/Real-Time-Voice-Notification-Application-for-Payment-Processing/`
 
 ## ขั้นตอนที่ 6 — Deploy ครั้งต่อไป
 
@@ -256,9 +256,9 @@ POST action=notify  + token  ──────────────► Apps 
 | รายการ | ค่า |
 |---|---|
 | Package ID | `th.coffeesukjai.slipverify` (ตัวเดียวกับแอปหลัก — ติดตั้งทับรุ่น 1.0.0 ได้เลย) |
-| Version | 1.2.1 (versionCode 5) |
+| Version | 1.2.2 (versionCode 6) |
 | Android ที่รองรับ | 7.0 ขึ้นไป (minSdk 24, targetSdk 34) |
-| ไฟล์ติดตั้ง | `Documents\coffee-slip-apk\kaafae-sukjai-v1.2.1.apk` (~41 KB) |
+| ไฟล์ติดตั้ง | `Documents\coffee-slip-apk\kaafae-sukjai-v1.2.2.apk` (~41 KB) |
 | ซอร์สโค้ด | `Documents\coffee-slip-apk\app-merged\` — **อยู่นอก repo นี้** (มี token ฝังอยู่) |
 | build ใหม่ | `powershell -ExecutionPolicy Bypass -File .\build.ps1` (ไม่ใช้ Gradle, ใช้ JDK 17 + build-tools 36.1.0) |
 
@@ -283,7 +283,7 @@ POST action=notify  + token  ──────────────► Apps 
 
 ### วิธีติดตั้ง (ทำครั้งเดียว)
 
-1. คัดลอก `kaafae-sukjai-v1.2.1.apk` ไปที่มือถือเคาน์เตอร์ แล้วเปิดไฟล์ → ติดตั้งทับรุ่นเดิมได้เลย
+1. คัดลอก `kaafae-sukjai-v1.2.2.apk` ไปที่มือถือเคาน์เตอร์ แล้วเปิดไฟล์ → ติดตั้งทับรุ่นเดิมได้เลย
 2. เปิดแอป → ครั้งแรกจะเด้งหน้า **ตัวรับเงินเข้า** อัตโนมัติ
 3. ถ้าเป็น Android 13 ขึ้นไป: กด **"① เปิดข้อมูลแอป"** → ⋮ มุมขวาบน → **"อนุญาตการตั้งค่าที่จำกัด"**
    (ถ้าไม่มีเมนูนี้ ข้ามได้ — บางรุ่นไม่ต้องอนุญาต)
@@ -328,10 +328,10 @@ POST action=notify  + token  ──────────────► Apps 
 | รายการ | ค่า |
 |---|---|
 | Package ID | `th.coffeesukjai.slipverify` |
-| Version | 1.2.1 (versionCode 5) |
+| Version | 1.2.2 (versionCode 6) |
 | Android ที่รองรับ | 7.0 ขึ้นไป (minSdk 24, targetSdk 34) |
-| URL ที่เปิด | `https://smartzzz78.github.io/sheet-drive-app/index.html` |
-| ไฟล์ติดตั้ง | `Documents\coffee-slip-apk\kaafae-sukjai-v1.2.1.apk` (~41 KB) |
+| URL ที่เปิด | `https://smartzzz78.github.io/Real-Time-Voice-Notification-Application-for-Payment-Processing/index.html` |
+| ไฟล์ติดตั้ง | `Documents\coffee-slip-apk\kaafae-sukjai-v1.2.2.apk` (~41 KB) |
 | ซอร์สโค้ด | `Documents\coffee-slip-apk\app-merged\` (นอก repo) |
 
 - รุ่น 1.0.0 (TWA / Chrome engine) ถูกแทนที่แล้ว — เก็บ `coffee-slip-v1.0.0.apk` ไว้เป็นรุ่นย้อนกลับได้
