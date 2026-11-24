@@ -39,7 +39,13 @@
     .nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;color:var(--muted);font-size:11px;font-weight:600}
     .nav-item.active{color:var(--primary)}.nav-item svg{width:22px;height:22px;display:block}
     .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#101828;color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;z-index:100;opacity:0;transition:.2s;pointer-events:none}.toast.show{opacity:1}
-    @media print{nav,header,.no-print{display:none!important}main{padding:0}.card{box-shadow:none;break-inside:avoid}}
+    .modal{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;padding:16px}
+    .modal.open{display:flex}
+    .modal-backdrop{position:absolute;inset:0;background:rgba(16,24,40,.6)}
+    .modal-card{position:relative;background:#fff;border-radius:18px;padding:18px;width:100%;max-width:420px;max-height:90dvh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+    .modal-qr{display:flex;justify-content:center;margin:10px 0}.modal-qr img{max-width:100%;width:100%;height:auto}
+    .modal-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.modal-actions button{flex:1;min-width:100px}
+    @media print{nav,header,.no-print,.modal{display:none!important}main{padding:0}.card{box-shadow:none;break-inside:avoid}}
   </style>
 </head>
 <body>
@@ -80,9 +86,24 @@
     <h2>QR ชำระเงิน</h2>
     <div class="qr-wrap"><div id="qrcode"><div class="empty">กรอกเลข PromptPay และเลือกสินค้า</div></div></div>
     <p id="qr-detail" style="text-align:center"></p>
-    <button id="btn-print" class="secondary" style="width:100%">พิมพ์ QR</button>
+    <button id="btn-print" class="secondary" style="width:100%">ดู / บันทึก QR</button>
   </div>
 </main>
+
+<div class="modal" id="qr-modal" aria-hidden="true">
+  <div class="modal-backdrop" id="modal-backdrop"></div>
+  <div class="modal-card">
+    <h2>QR ชำระเงิน</h2>
+    <div class="modal-qr" id="modal-qr"></div>
+    <p id="modal-detail" style="text-align:center"></p>
+    <p style="text-align:center;font-size:12px">แตะค้างที่ภาพ QR เพื่อบันทึกหรือแชร์จากเครื่องได้เลย</p>
+    <div class="modal-actions">
+      <button id="btn-save">บันทึกภาพ QR</button>
+      <button id="btn-share" class="secondary">แชร์</button>
+      <button id="btn-close" class="secondary">ปิด</button>
+    </div>
+  </div>
+</div>
 
 <nav class="pb-safe">
   <div class="nav-grid">
@@ -263,8 +284,80 @@
 
   document.getElementById('promptpay-id').addEventListener('input', function(){ persistSettings(); renderQr(); });
   document.getElementById('receiver-name').addEventListener('input', function(){ persistSettings(); renderQr(); });
+  function qrDataUrl(){
+    var img = document.querySelector('#qrcode img');
+    return img ? img.src : '';
+  }
+  function dataUrlToBlob(dataUrl){
+    var parts = dataUrl.split(',');
+    var match = parts[0].match(/:(.*?);/);
+    var mime = match ? match[1] : 'image/png';
+    var bin = atob(parts[1]);
+    var arr = new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type: mime });
+  }
+  function openQrModal(){
+    var src = qrDataUrl();
+    if(!src){ toast('ยังไม่มี QR — กรอกเลข PromptPay และเลือกสินค้าก่อน'); return; }
+    document.getElementById('modal-qr').innerHTML = '<img src="'+src+'" alt="QR PromptPay">';
+    document.getElementById('modal-detail').innerHTML = document.getElementById('qr-detail').innerHTML || money(calcTotal());
+    document.getElementById('qr-modal').classList.add('open');
+  }
+  function closeQrModal(){ document.getElementById('qr-modal').classList.remove('open'); }
+  async function toPngDataUrl(src){
+    return new Promise(function(resolve, reject){
+      var img = new Image();
+      img.onload = function(){
+        var size = img.naturalWidth || 600;
+        var c = document.createElement('canvas');
+        c.width = size; c.height = size;
+        var ctx = c.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0,0,size,size);
+        ctx.drawImage(img,0,0,size,size);
+        try{ resolve(c.toDataURL('image/png')); }catch(e){ reject(e); }
+      };
+      img.onerror = function(){ reject(new Error('แปลงภาพไม่ได้')); };
+      img.src = src;
+    });
+  }
+  async function saveQr(){
+    var src = qrDataUrl();
+    if(!src){ toast('ยังไม่มี QR'); return; }
+    try{
+      var png = await toPngDataUrl(src);
+      var blob = dataUrlToBlob(png);
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = 'payvox-qr-' + Date.now() + '.png';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
+      toast('กำลังบันทึกภาพ QR');
+    }catch(err){
+      toast('บันทึกอัตโนมัติไม่ได้ — แตะค้างที่ภาพแล้วเลือกบันทึกแทน');
+    }
+  }
+  async function shareQr(){
+    var src = qrDataUrl();
+    if(!src){ toast('ยังไม่มี QR'); return; }
+    try{
+      var blob = dataUrlToBlob(src);
+      var file = new File([blob], 'payvox-qr.png', { type: blob.type });
+      if(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })){
+        await navigator.share({ files: [file], title: 'QR ชำระเงิน PayVox' });
+      }else{
+        await saveQr();
+      }
+    }catch(err){
+      if(err && err.name !== 'AbortError') toast('แชร์ไม่ได้ — แตะค้างที่ภาพแล้วแชร์แทน');
+    }
+  }
   document.getElementById('btn-add').addEventListener('click', addProduct);
-  document.getElementById('btn-print').addEventListener('click', function(){ window.print(); });
+  document.getElementById('btn-print').addEventListener('click', openQrModal);
+  document.getElementById('btn-close').addEventListener('click', closeQrModal);
+  document.getElementById('modal-backdrop').addEventListener('click', closeQrModal);
+  document.getElementById('btn-save').addEventListener('click', saveQr);
+  document.getElementById('btn-share').addEventListener('click', shareQr);
 
   loadSettings();
   loadProducts();
