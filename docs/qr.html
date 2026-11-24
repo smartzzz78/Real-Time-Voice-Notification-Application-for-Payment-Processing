@@ -193,21 +193,37 @@
   }
   function tlv(tag, value){ return tag + ('00'+value.length).slice(-2) + value; }
 
-  function promptpayPayload(id, amount, name){
+  function promptpayPayload(id, amount){
     var normalized = String(id||'').replace(/\D/g,'');
     if(!(normalized.length===10 || normalized.length===13)){
-      return { error:'เลข PromptPay ต้องเป็นเบอร์โทร 10 หลัก หรือเลขบัตร 13 หลัก' };
+      return { error:'เลข PromptPay ต้องเป็นเบอร์โทร 10 หลัก หรือเลขบัตรประชาชน 13 หลัก (ตอนนี้ '+normalized.length+' หลัก)' };
     }
     var aid = 'A000000677010111';
     var subTag = normalized.length===13 ? '01' : '02';
     var merchant = tlv('00',aid) + tlv(subTag,normalized);
-    if(name && name.trim()) merchant += tlv('05',name.trim().slice(0,25));
     var amountStr = Number(amount).toFixed(2);
     var body = tlv('00','01') + tlv('01','12') + tlv('29',merchant) + tlv('53','764') + tlv('54',amountStr) + tlv('58','TH') + '6304';
     return { payload: body + crc16(body) };
   }
 
-  function renderQr(){
+  var qrLibPromise = null;
+  function ensureQrLib(){
+    if(typeof window.qrcode === 'function') return Promise.resolve();
+    if(qrLibPromise) return qrLibPromise;
+    qrLibPromise = new Promise(function(resolve, reject){
+      var s = document.createElement('script');
+      s.src = 'js/qrcode.js?v=2';
+      s.onload = function(){
+        if(typeof window.qrcode === 'function') resolve();
+        else reject(new Error('ไฟล์สร้าง QR ไม่ถูกต้อง'));
+      };
+      s.onerror = function(){ reject(new Error('โหลดไฟล์สร้าง QR ไม่ได้ โปรดเช็คอินเทอร์เน็ต')); };
+      document.head.appendChild(s);
+    });
+    return qrLibPromise;
+  }
+
+  async function renderQr(){
     var box = document.getElementById('qrcode');
     var detail = document.getElementById('qr-detail');
     var total = calcTotal();
@@ -218,18 +234,19 @@
       box.innerHTML = '<div class="empty">กรอกเลข PromptPay และเลือกสินค้า</div>';
       detail.textContent = ''; return;
     }
-    var result = promptpayPayload(id,total,name);
+    var result = promptpayPayload(id,total);
     if(result.error){
       box.innerHTML = '<div class="empty">'+esc(result.error)+'</div>'; detail.textContent=''; return;
     }
-    box.innerHTML = '';
     try{
+      await ensureQrLib();
       var qr = qrcode(0,'M');
       qr.addData(result.payload); qr.make();
       box.innerHTML = qr.createImgTag(6,8);
-      detail.innerHTML = '<strong>'+money(total)+'</strong><br>'+lines.map(esc).join('<br>');
+      detail.innerHTML = '<strong>'+money(total)+'</strong><br>'+(name ? esc(name)+'<br>' : '')+lines.map(esc).join('<br>');
     }catch(err){
       box.innerHTML = '<div class="empty">สร้าง QR ไม่ได้: '+esc(err.message)+'</div>';
+      detail.textContent = '';
     }
   }
 
