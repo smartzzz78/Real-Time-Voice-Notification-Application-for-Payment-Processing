@@ -3,11 +3,12 @@
 แอปแจ้งเตือนเงินเข้าแบบเรียลไทม์ด้วยเสียง พร้อมฟีดรายการและเครื่องมือตรวจสลิป ใช้ **GitHub Pages** เป็น frontend และ **Google Apps Script** เป็น backend
 โดยใช้ **Google Sheets** เป็นฐานข้อมูล และ **Google Drive** เก็บไฟล์แนบ
 
-แอปเหลือ 3 หน้าที่ใช้จริง (เมนูล่างมี 2 แท็บ):
+แอปมีหน้าที่ใช้จริง 4 หน้า (เมนูล่างมี 3 แท็บ):
 
 | หน้า | ไฟล์ | คำอธิบาย |
 |---|---|---|
 | ตรวจสลิป & เงินเข้า (หน้าหลัก) | `docs/index.html` | ฟีดรายการเงินเข้าจาก Google Sheets + **อ่านออกเสียงยอดเงินเข้าอัตโนมัติ** (poll ทุก 15 วิ) + ปุ่มยืนยันสลิป |
+| QR ชำระเงิน | `docs/qr.html` | เลือกสินค้า → ใส่จำนวน → คำนวณยอด → สร้าง QR PromptPay (แท็บที่ 3) |
 | ตั้งค่าเสียง | `docs/settings-voice.html` | เลือกเสียงพากย์ AI (persona), ทดสอบฟังเสียง, วางคีย์ Gemini |
 | เพิ่มเงินเข้า | `docs/money-in.html` | ฟอร์มบันทึกยอดรับเงิน บันทึกลง Sheets + อัปโหลดรูปสลิปขึ้น Drive (เปิดจากลิงก์ "＋ เพิ่มเงินเข้า" ในการ์ดรายการล่าสุด ไม่ได้อยู่ในเมนูล่าง) |
 
@@ -15,6 +16,15 @@
 > — ถ้าต้องการกลับมา ดูได้จาก history ของ git
 
 เสียงประกาศพูดแค่ยอดเงิน เช่น **"เงินเข้า 150 บาท"** (ไม่พูดชื่อลูกค้า) ส่วนชื่อลูกค้ายังแสดงบนจอตามปกติ
+
+## ระบบ QR PromptPay
+
+- หน้า `qr.html` (เมนู **QR**) อ่านรายการสินค้าจากชีต **สินค้า** ใน Google Sheet เดิม
+- โครงสร้างชีตสินค้า: `id | name | price | active` — เพิ่ม/แก้/ลบได้จากหน้า QR
+- ตัวอย่าง: ขนม 2 ชิ้น × 5 บาท = **10 บาท**
+- ระบบสร้าง payload ตามมาตรฐาน EMV (มี CRC16) สำหรับ PromptPay แบบระบุจำนวนเงิน
+- **เลข PromptPay และชื่อผู้รับเก็บใน `localStorage` ของเครื่องเท่านั้น** ไม่ส่งขึ้นเซิร์ฟเวอร์/Repo
+- หลังลูกค้าสแกนชำระ เงินเข้าจะถูกอ่านโดยตัวรับ KTB และประกาศเสียงเหมือนเดิม
 
 
 ## ลิงก์โปรเจกต์
@@ -29,6 +39,7 @@
 .
 ├─ docs/                 # Frontend (GitHub Pages เสิร์ฟจากโฟลเดอร์นี้)
 │  ├─ index.html         # หน้าหลัก: ตรวจสลิป + อ่านเสียงยอดเงินเข้า
+│  ├─ qr.html            # หน้า QR: คำนวณยอดจากสินค้า + QR PromptPay
 │  ├─ settings-voice.html # ตั้งค่าเสียง: persona, ทดสอบเสียง, คีย์ Gemini
 │  ├─ money-in.html      # ฟอร์มบันทึกเงินเข้า (เปิดจากลิงก์ในหน้าแรก)
 │  └─ js/
@@ -173,6 +184,9 @@ gh api -X POST repos/{owner}/Real-Time-Voice-Notification-Application-for-Paymen
 | `voiceConfig` | GET | `?action=voiceConfig` | `{ hasKey, model, voice }` — สถานะเสียง AI (ไม่เปิดคีย์) |
 | `setVoiceConfig` | POST | `{ action:'setVoiceConfig', payload:{ apiKey?, voice?, model? } }` | ตั้งคีย์ / โหมดเสียง AI |
 | `speak` | POST | `{ action:'speak', payload:{ text, voice?, model? } }` | `{ audioBase64, mimeType }` เสียงจาก Gemini TTS |
+| `listProducts` | GET | `?action=listProducts` | รายการสินค้าจากชีต "สินค้า" |
+| `saveProduct` | POST | `{ action:'saveProduct', payload:{ id?, name, price } }` | เพิ่ม/แก้สินค้า |
+| `deleteProduct` | POST | `{ action:'deleteProduct', payload:{ id } }` | ลบสินค้า |
 
 หมายเหตุ: frontend ส่ง POST ด้วย `Content-Type: text/plain` เพื่อเลี่ยง CORS preflight
 เพราะ Apps Script ไม่รองรับ request method `OPTIONS`

@@ -6,6 +6,8 @@
  */
 
 var HEADERS = ['id', 'ref', 'customer', 'bank', 'amount', 'note', 'fileName', 'fileUrl', 'createdAt'];
+var PRODUCT_HEADERS = ['id', 'name', 'price', 'active'];
+var PRODUCTS_SHEET = 'สินค้า';
 
 function getHeaders_() {
   return HEADERS.slice();
@@ -255,4 +257,82 @@ function createRecord_(payload) {
 
   record.createdAt = record.createdAt.toISOString();
   return record;
+}
+
+/* ---------- สินค้า สำหรับคำนวณยอดและสร้าง QR PromptPay ---------- */
+
+function ensureProductsSheet_() {
+  var ss = getSpreadsheet_();
+  var sheet = ss.getSheetByName(PRODUCTS_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(PRODUCTS_SHEET);
+  }
+  if (String(sheet.getRange(1, 1).getValue()).trim() === '') {
+    sheet.getRange(1, 1, 1, PRODUCT_HEADERS.length).setValues([PRODUCT_HEADERS]);
+    sheet.getRange(1, 1, 1, PRODUCT_HEADERS.length).setFontWeight('bold');
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function listProducts_() {
+  var sheet = ensureProductsSheet_();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+
+  var values = sheet.getRange(2, 1, lastRow - 1, PRODUCT_HEADERS.length).getValues();
+  var products = [];
+  for (var i = 0; i < values.length; i++) {
+    var row = values[i];
+    var name = String(row[1] || '').trim();
+    if (!name) continue;
+    var price = Number(String(row[2]).replace(/[,\s฿]/g, ''));
+    if (!isFinite(price) || price < 0) price = 0;
+    products.push({
+      id: String(row[0] || ''),
+      name: name,
+      price: Math.round(price * 100) / 100,
+      active: String(row[3] || 'true').toLowerCase() !== 'false'
+    });
+  }
+  return products;
+}
+
+function saveProduct_(payload) {
+  payload = payload || {};
+  var name = String(payload.name || '').trim();
+  var price = Number(payload.price);
+  if (!name) throw new Error('กรุณาระบุชื่อสินค้า');
+  if (!isFinite(price) || price <= 0) throw new Error('กรุณาระบุราคาสินค้า (มากกว่า 0)');
+
+  var sheet = ensureProductsSheet_();
+  var id = String(payload.id || '').trim();
+  if (id) {
+    var ids = sheet.getRange(2, 1, Math.max(sheet.getLastRow() - 1, 0), 1).getValues();
+    for (var i = 0; i < ids.length; i++) {
+      if (String(ids[i][0]) === id) {
+        sheet.getRange(i + 2, 2, 1, 3).setValues([[name, price, 'true']]);
+        return { id: id, name: name, price: price, active: true };
+      }
+    }
+  }
+
+  id = String(Date.now());
+  sheet.appendRow([id, name, price, 'true']);
+  return { id: id, name: name, price: price, active: true };
+}
+
+function deleteProduct_(payload) {
+  payload = payload || {};
+  var id = String(payload.id || '');
+  if (!id) throw new Error('ไม่พบรหัสสินค้า');
+  var sheet = ensureProductsSheet_();
+  var ids = sheet.getRange(2, 1, Math.max(sheet.getLastRow() - 1, 0), 1).getValues();
+  for (var i = 0; i < ids.length; i++) {
+    if (String(ids[i][0]) === id) {
+      sheet.deleteRow(i + 2);
+      return { ok: true };
+    }
+  }
+  throw new Error('ไม่พบสินค้าที่ต้องการลบ');
 }

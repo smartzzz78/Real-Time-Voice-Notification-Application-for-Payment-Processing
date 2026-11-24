@@ -15,6 +15,9 @@
  *   GET  ?action=voiceConfig                       -> สถานะคีย์ AI Voice + โหมดเสียง
  *   POST { action: 'setVoiceConfig', payload: {} } -> ตั้งคีย์ / โหมดเสียง AI
  *   POST { action: 'speak', payload: {...} }        -> สร้างเสียง AI (base64)
+ *   GET  ?action=listProducts                       -> รายการสินค้าและราคา
+ *   POST { action: 'saveProduct', payload: {...} }  -> เพิ่ม/แก้สินค้า
+ *   POST { action: 'deleteProduct', payload:{} }    -> ลบสินค้า
  */
 
 function doGet(e) {
@@ -68,6 +71,15 @@ function handleRequest_(e, method) {
         break;
       case 'speak':
         data = speak_(payload);
+        break;
+      case 'listProducts':
+        data = listProducts_();
+        break;
+      case 'saveProduct':
+        data = saveProduct_(payload);
+        break;
+      case 'deleteProduct':
+        data = deleteProduct_(payload);
         break;
       default:
         throw new Error('Unknown action: "' + action + '"');
