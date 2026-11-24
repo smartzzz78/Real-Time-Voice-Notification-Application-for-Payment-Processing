@@ -37,7 +37,7 @@
     nav{position:fixed;bottom:0;left:0;right:0;z-index:50;background:rgba(255,255,255,.94);backdrop-filter:blur(14px);border-top:1px solid var(--line)}
     .nav-grid{display:grid;grid-template-columns:repeat(3,1fr);height:64px;align-items:center;padding:0 4px}
     .nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;color:var(--muted);font-size:11px;font-weight:600}
-    .nav-item.active{color:var(--primary)}.nav-item .material-symbols-outlined{font-size:22px}
+    .nav-item.active{color:var(--primary)}.nav-item svg{width:22px;height:22px;display:block}
     .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#101828;color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;z-index:100;opacity:0;transition:.2s;pointer-events:none}.toast.show{opacity:1}
     @media print{nav,header,.no-print{display:none!important}main{padding:0}.card{box-shadow:none;break-inside:avoid}}
   </style>
@@ -86,9 +86,9 @@
 
 <nav class="pb-safe">
   <div class="nav-grid">
-    <a class="nav-item" href="index.html"><span class="material-symbols-outlined">verified_user</span><span>ตรวจสลิป</span></a>
-    <a class="nav-item active" href="qr.html"><span class="material-symbols-outlined">qr_code_2</span><span>QR</span></a>
-    <a class="nav-item" href="settings-voice.html"><span class="material-symbols-outlined">record_voice_over</span><span>ตั้งค่าเสียง</span></a>
+    <a class="nav-item" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3z"/><path d="m9 12 2 2 4-4"/></svg><span>ตรวจสลิป</span></a>
+    <a class="nav-item active" href="qr.html"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="3" height="3"/><rect x="18" y="14" width="3" height="3"/><rect x="14" y="18" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/></svg><span>QR</span></a>
+    <a class="nav-item" href="settings-voice.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/></svg><span>ตั้งค่าเสียง</span></a>
   </div>
 </nav>
 <div class="toast" id="toast"></div>

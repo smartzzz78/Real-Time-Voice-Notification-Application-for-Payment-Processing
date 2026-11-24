@@ -4,7 +4,7 @@
  * - ไม่แตะ request ข้ามโดเมน (เช่น Apps Script API) เด็ดขาด
  * - เปลี่ยน CACHE_NAME เมื่อต้องการล้าง cache ทั้งหมด
  */
-var CACHE_NAME = 'payvox-v1.2.4-qr';
+var CACHE_NAME = 'payvox-v1.2.4-qr-svg-nav';
 
 self.addEventListener('install', function (event) {
   self.skipWaiting();
