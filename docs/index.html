@@ -64,6 +64,28 @@
 </div>
 </div>
 </section>
+<!-- บัญชี/PromptPay ของเครื่องนี้ — รหัสเดียวกันบน 2 เครื่อง = เห็นรายการชุดเดียวกัน -->
+<section class="flex flex-col p-space-md rounded-2xl bg-surface-container-lowest shadow-md gap-space-sm">
+<div class="flex items-center justify-between gap-2">
+<div class="flex items-center gap-space-xs min-w-0">
+<span class="material-symbols-outlined text-[20px] text-primary shrink-0">account_balance</span>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface font-semibold">บัญชีของเครื่องนี้</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant truncate" id="accountCurrent">บัญชีหลัก</span>
+</div>
+</div>
+<button id="btnEditAccount" class="px-2 py-1 rounded-lg bg-surface-container font-label-sm text-label-sm text-primary font-semibold active:scale-95 transition-transform shrink-0" onclick="toggleAccountEditor()">เปลี่ยน</button>
+</div>
+<div id="accountEditor" class="hidden flex flex-col gap-2">
+<label class="font-label-sm text-label-sm text-on-surface-variant" for="accountKeyInput">เลข PromptPay / บัญชี (ใส่เลขเดียวกันบน 2 เครื่องเพื่อแชร์รายการ)</label>
+<input id="accountKeyInput" class="w-full h-12 rounded-xl bg-surface-container-lowest border border-surface-container-high px-4 font-body-md text-on-surface outline-none focus:border-primary transition-colors" inputmode="numeric" maxlength="40" placeholder="เช่น 0812345678 หรือปล่อยว่างสำหรับบัญชีหลัก">
+<div class="flex gap-2">
+<button class="flex-1 h-11 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-bold shadow-md active:scale-95 transition-transform" onclick="saveAccountKey()">ใช้บัญชีนี้</button>
+<button class="flex-1 h-11 rounded-xl bg-surface-container text-on-surface font-label-md text-label-md font-semibold active:scale-95 transition-transform" onclick="clearAccountKey()">บัญชีหลัก</button>
+</div>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant leading-relaxed">รหัสเดียวกัน = เห็นรายการเดียวกัน • คนละรหัส = แยกรายการ • เก็บในเครื่องเท่านั้น</p>
+</section>
 <!-- Slip Scanner & Quick Checker Tool -->
 <section class="flex flex-col p-space-md rounded-2xl bg-surface-container-lowest shadow-md gap-space-sm relative overflow-hidden">
 <div class="flex items-center justify-between">
@@ -711,6 +733,40 @@
     showToast('ทดสอบระบบเสียง', 'ระบบตรวจสลิปแท้ 100% ออนไลน์และพร้อมเปล่งเสียง', false);
   };
 
+  // ---- เลือกบัญชี/PromptPay ของเครื่องนี้ (แยกรายการเงินเข้า) ----
+  function renderAccountCurrent() {
+    var el = document.getElementById('accountCurrent');
+    if (el && window.PayVoxAccount) el.textContent = PayVoxAccount.label();
+  }
+  function toggleAccountEditor() {
+    var box = document.getElementById('accountEditor');
+    if (!box) return;
+    var opening = box.classList.contains('hidden');
+    box.classList.toggle('hidden', !opening);
+    if (opening && window.PayVoxAccount) {
+      var input = document.getElementById('accountKeyInput');
+      input.value = PayVoxAccount.get();
+      input.focus();
+    }
+  }
+  function applyAccount(value) {
+    var next = window.changePayVoxAccount ? window.changePayVoxAccount(value)
+      : (window.PayVoxAccount ? PayVoxAccount.set(value) : '');
+    renderAccountCurrent();
+    var box = document.getElementById('accountEditor');
+    if (box) box.classList.add('hidden');
+    if (typeof showToast === 'function') {
+      showToast('เปลี่ยนบัญชีแล้ว', next ? 'กำลังโหลดรายการของบัญชีนี้…' : 'กลับไปใช้บัญชีหลัก…', false);
+    }
+  }
+  function saveAccountKey() {
+    var input = document.getElementById('accountKeyInput');
+    applyAccount(input ? input.value : '');
+  }
+  function clearAccountKey() { applyAccount(''); }
+  // account.js/app.js โหลดหลังสคริปต์นี้ → รอ DOM พร้อมก่อนอ่านค่า
+  window.addEventListener('DOMContentLoaded', renderAccountCurrent);
+
   // Pre-load synth voices
   if ('speechSynthesis' in window) {
     window.speechSynthesis.onvoiceschanged = () => {
@@ -718,8 +774,9 @@
     };
   }
 </script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(0,0,0,0.05)]"><div class="grid grid-cols-2 items-center h-16 px-1"><a aria-current="page" class="flex flex-col items-center justify-center h-12 gap-0.5 transition-colors text-primary font-bold" href="index.html"><svg class="w-[22px] h-[22px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3z"/><path d="m9 12 2 2 4-4"/></svg><span class="font-label-sm text-label-sm text-center">ตรวจสลิป &amp; เงินเข้า</span></a><a class="flex flex-col items-center justify-center h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" href="qr.html?v=7"><svg class="w-[22px] h-[22px] shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="3" height="3"/><rect x="18" y="14" width="3" height="3"/><rect x="14" y="18" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/></svg><span class="font-label-sm text-label-sm text-center">QR</span></a></div></nav><script src="js/config.js?v=1"></script>
-<script src="js/api.js?v=1"></script>
-<script src="js/app.js?v=8"></script>
+<script src="js/account.js?v=1"></script>
+<script src="js/api.js?v=2"></script>
+<script src="js/app.js?v=9"></script>
 <script>
   // ลงทะเบียน service worker เพื่อให้ติดตั้งเป็นแอป (PWA/APK) ได้
   if ('serviceWorker' in navigator) {

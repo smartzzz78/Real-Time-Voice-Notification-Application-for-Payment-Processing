@@ -7,10 +7,10 @@
  *
  * รองรับ action:
  *   GET  ?action=ping                              -> ตรวจสอบระบบ + ข้อมูลชีต
- *   GET  ?action=list[&limit=100]                  -> รายการเงินเข้าล่าสุด
- *   GET  ?action=summary                           -> ยอดรวมวันนี้ + ยอดรวมทั้งหมด
- *   POST { action: 'resetSummary', payload: {} }   -> เริ่มนับยอดวันนี้ใหม่ (undo:true = คืนค่า)
- *   POST { action: 'create', payload: {...} }      -> บันทึกรายการเงินเข้า
+ *   GET  ?action=list[&limit=100][&account=...]    -> รายการเงินเข้าล่าสุดของบัญชีนั้น
+ *   GET  ?action=summary[&account=...]             -> ยอดรวมวันนี้ + ยอดรวมทั้งหมดของบัญชีนั้น
+ *   POST { action: 'resetSummary', payload: { account } } -> เริ่มนับยอดวันนี้ใหม่ (undo:true = คืนค่า)
+ *   POST { action: 'create', payload: {...} }      -> บันทึกรายการเงินเข้า (payload.account = รหัสบัญชี)
  *   POST { action: 'upload', payload: {...} }      -> อัปโหลดรูปสลิปขึ้น Drive
  *   POST { action: 'notify', payload: {...} }       -> รับแจ้งเงินเข้าจาก Android (มี token)
  *   GET  ?action=listProducts                       -> รายการสินค้าและราคา
@@ -58,13 +58,13 @@ function handleRequest_(e, method) {
         data = ping_();
         break;
       case 'list':
-        data = listRecords_(params.limit);
+        data = listRecords_(params.limit, params.account);
         break;
       case 'summary':
-        data = summarizeRecords_();
+        data = summarizeRecords_(params.account);
         break;
       case 'resetSummary':
-        data = resetSummary_(payload);
+        data = resetSummary_(payload, payload.account);
         break;
       case 'create':
         data = createRecord_(payload);

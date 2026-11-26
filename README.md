@@ -19,6 +19,16 @@
 ไอคอนทั้งหมดเป็น **Material Symbols แบบ self-host** (`docs/fonts/`, subset ~10 KB) จึงไม่โหลดจาก `fonts.googleapis.com` และถูก service worker cache ร่วมกับเว็บ
 UI ทั้ง 3 หน้าใช้คอมโพเนนต์/โทนสีเดียวกันจาก `docs/css/payvox.css` และ `docs/js/theme.js` (แก้ที่เดียว อัปเดตทุกหน้า)
 
+## แยกรายการเงินเข้าตามบัญชี/PromptPay
+
+- หน้าหลักมีช่อง **"บัญชีของเครื่องนี้"** → กด **เปลี่ยน** แล้วใส่เลข PromptPay/บัญชี
+- **ใส่เลขเดียวกันบน 2 เครื่อง = เห็นรายการ/ยอดรวมชุดเดียวกัน** (แม้คนละเครื่อง)
+- **ใส่คนละเลข = แยกรายการและยอดรวมออกจากกัน** (คนละบัญชี)
+- รหัสบัญชีถูกจัดรูปแบบให้ตรงกัน (`081-234-5678` = `0812345678`) และเก็บใน `localStorage` เครื่องนั้นเท่านั้น
+- หน้า QR ใช้เลข PromptPay **ตัวเดียวกันนี้** — แก้จากหน้าไหนก็มีผลทั้งแอป
+- ปล่อยว่าง = **บัญชีหลัก** (รายการเก่าก่อนมีฟีเจอร์นี้ยังอยู่ตรงนี้)
+- ปุ่ม **รีเซ็ทยอดวันนี้** ก็แยกตามบัญชีเช่นกัน
+
 ## ระบบ QR PromptPay
 
 - หน้า `qr.html` (เมนู **QR**) อ่านรายการสินค้าจากชีต **สินค้า** ใน Google Sheet เดิม
@@ -27,6 +37,7 @@ UI ทั้ง 3 หน้าใช้คอมโพเนนต์/โทน�
 - ตัวอย่าง: ขนม 2 ชิ้น × 5 บาท = **10 บาท**
 - ระบบสร้าง payload ตามมาตรฐาน EMV (มี CRC16) สำหรับ PromptPay แบบระบุจำนวนเงิน
 - **เลข PromptPay และชื่อผู้รับเก็บใน `localStorage` ของเครื่องเท่านั้น** ไม่ส่งขึ้นเซิร์ฟเวอร์/Repo
+- เลข PromptPay ที่ใส่ในหน้า QR คือ **รหัสบัญชีที่ใช้แยกรายการเงินเข้า** ด้วย (ดูหัวข้อ "แยกรายการเงินเข้าตามบัญชี/PromptPay")
 - หลังลูกค้าสแกนชำระ เงินเข้าจะถูกอ่านโดยตัวรับ KTB และประกาศเสียงเหมือนเดิม
 
 
@@ -179,11 +190,11 @@ gh api -X POST repos/{owner}/Real-Time-Voice-Notification-Application-for-Paymen
 | Action | Method | Body / Query | ผลลัพธ์ |
 |---|---|---|---|
 | `ping` | GET | `?action=ping` | `{ ok, time, spreadsheetId, sheetName, headers, rowCount }` (สร้าง header ให้อัตโนมัติ) |
-| `list` | GET | `?action=list` (option `&limit=100`) | รายการเงินเข้าล่าสุด (ใหม่สุดก่อน) |
-| `summary` | GET | `?action=summary` | `{ date, todayCount, todayTotal, totalCount, totalAmount, resetActive, resetAt, resetAtLocal, todayFrom }` — ยอดรวมวันนี้/ทั้งหมด (คำนวณฝั่งเซิร์ฟเวอร์ ใช้กับยอดเงินรวมบนหน้าจอ) |
-| `resetSummary` | POST | `{ action:'resetSummary', payload:{} }` (หรือ `payload:{ undo:true }` เพื่อคืนค่า) | เริ่มนับยอดวันนี้ใหม่ตั้งแต่ตอนนี้ / ล้างการรีเซ็ท — คืนสรุปชุดเดียวกับ `summary` |
-| `create` | POST | `{ action:'create', payload:{ amount, customer, bank, ref, note, fileName, fileUrl } }` | record ที่สร้าง |
-| `notify` | POST | `{ action:'notify', payload:{ token, amount, ref?, customer?, bank?, note?, dryRun? } }` | รับเงินเข้าอัตโนมัติจากแอป Android (ดูหัวข้อ "เงินเข้าอัตโนมัติ") — `{ duplicate, record }` |
+| `list` | GET | `?action=list` (option `&limit=100&account=0812345678`) | รายการเงินเข้าล่าสุดของบัญชีนั้น (ใหม่สุดก่อน) |
+| `summary` | GET | `?action=summary` (option `&account=0812345678`) | `{ date, todayCount, todayTotal, totalCount, totalAmount, resetActive, resetAt, resetAtLocal, todayFrom }` — ยอดรวมของบัญชีนั้น (คำนวณฝั่งเซิร์ฟเวอร์) |
+| `resetSummary` | POST | `{ action:'resetSummary', payload:{ account } }` (หรือ `payload:{ undo:true, account }` เพื่อคืนค่า) | เริ่มนับยอดวันนี้ใหม่ของบัญชีนั้น / ล้างการรีเซ็ท — คืนสรุปชุดเดียวกับ `summary` |
+| `create` | POST | `{ action:'create', payload:{ amount, customer, bank, ref, note, fileName, fileUrl, account } }` | record ที่สร้าง (`dryRun:true` = ทดสอบโดยไม่เขียนชีต) |
+| `notify` | POST | `{ action:'notify', payload:{ token, amount, ref?, customer?, bank?, note?, account?, dryRun? } }` | รับเงินเข้าอัตโนมัติจากแอป Android (ดูหัวข้อ "เงินเข้าอัตโนมัติ") — `{ duplicate, record }` |
 | `upload` | POST | `{ action:'upload', payload:{ filename, mimeType, base64 } }` | ข้อมูลไฟล์บน Drive |
 | `listProducts` | GET | `?action=listProducts` | รายการสินค้าจากชีต "สินค้า" |
 | `saveProduct` | POST | `{ action:'saveProduct', payload:{ id?, name, price } }` | เพิ่ม/แก้สินค้า |
@@ -342,8 +353,8 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 
 ## โครงสร้างข้อมูลใน Sheets
 
-ชีตแรกของสเปรดชีตที่ผูกกับสคริปต์ (header สร้างให้อัตโนมัติ):
-`id | ref | customer | bank | amount | note | fileName | fileUrl | createdAt`
+ชีตแรกของสเปรดชีตที่ผูกกับสคริปต์ (header สร้าง/เติมให้อัตโนมัติ):
+`id | ref | customer | bank | amount | note | fileName | fileUrl | createdAt | account`
 
 - `id` — timestamp ใช้ตรวจจับรายการใหม่
 - `ref` — รหัสอ้างอิงบนสลิป
@@ -351,6 +362,7 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 - `amount` — ยอดเงิน
 - `fileName` / `fileUrl` — ไฟล์สลิปบน Google Drive
 - `createdAt` — เวลาที่บันทึก
+- `account` — รหัสบัญชี/PromptPay ใช้แยกรายการ (ค่าว่าง = บัญชีหลัก)
 
 ## การตั้งค่าขั้นสูง
 
@@ -361,6 +373,7 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 | `SPREADSHEET_ID` | ID ของสเปรดชีตที่ใช้เป็น DB |
 | `SHEET_NAME` | ชื่อชีต (ค่าที่ตั้งไว้ `รายการ`) |
 | `DRIVE_FOLDER_ID` | ID ของโฟลเดอร์ Drive สำหรับเก็บไฟล์ |
+| `NOTIFY_ACCOUNT` | บัญชีที่รับรายการจากแอป Android (APK เดิมยังไม่ส่ง `account`) ตั้งจาก editor: `setNotifyAccount('0812345678')` / ค่าว่าง = บัญชีหลัก |
 
 ## แก้ปัญหาที่พบบ่อย
 
@@ -370,7 +383,7 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
   ให้เปิด Web App URL ด้วยเบราว์เซอร์ที่ล็อกอินบัญชีเจ้าของ → Advanced → Go to project → Allow (1 ครั้งพอ)
 - **อัปเดตโค้ดแล้วหน้าเว็บยังเป็นของเก่า** → GitHub Pages แคชไฟล์ไว้ ~10 นาที
   กด Ctrl+F5 (hard refresh) หรือรอสักครู่แล้วรีเฟรชใหม่
-- **ไอคอนโชว์เป็นชื่อ เช่น `volume_up`** → ตรวจว่า `fonts/material-symbols.css?v=1` โหลดได้ (ไฟล์อยู่ใน repo แล้ว ไม่พึ่ง Google Fonts)
+- **ไอคอนโชว์เป็นชื่อ เช่น `volume_up`** → ตรวจว่า `fonts/material-symbols.css?v=2` โหลดได้ (ไฟล์อยู่ใน repo แล้ว ไม่พึ่ง Google Fonts)
   ถ้าเพิ่มไอคอนใหม่ ต้องสร้าง woff2 subset ให้ครบรายการในคอมเมนต์หัวไฟล์ CSS
 - **Pages deploy ขึ้น `No artifacts named "github-pages"`** → workflow มี retry รอ artifact 60 วิและใช้ actions เวอร์ชันใหม่แล้ว
   ถ้ายังเจอให้ rerun job เดิม 1 ครั้ง (URL เว็บไม่เปลี่ยน)

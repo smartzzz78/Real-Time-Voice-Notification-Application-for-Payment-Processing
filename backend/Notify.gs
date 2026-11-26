@@ -11,11 +11,23 @@
  */
 
 var NOTIFY_TOKEN_PROP = 'NOTIFY_TOKEN';
+var NOTIFY_ACCOUNT_PROP = 'NOTIFY_ACCOUNT';
 var NOTIFY_MAX_PER_MINUTE = 30;
 var NOTIFY_DEDUPE_SECONDS = 21600; // 6 ชั่วโมง
 
 function getNotifyToken_() {
   return PropertiesService.getScriptProperties().getProperty(NOTIFY_TOKEN_PROP) || '';
+}
+
+/**
+ * บัญชีของรายการที่แอป Android ส่งมา (APK เดิมไม่ได้ส่ง account)
+ * ตั้งครั้งเดียวจาก Apps Script editor: setNotifyAccount('0812345678')
+ * ถ้าไม่ตั้ง = "บัญชีหลัก" (ค่าว่าง) และยังเห็นรายการเก่าทั้งหมด
+ */
+function getNotifyAccount_() {
+  return normalizeAccountKey_(
+    PropertiesService.getScriptProperties().getProperty(NOTIFY_ACCOUNT_PROP) || ''
+  );
 }
 
 function notifyRecord_(payload) {
@@ -41,6 +53,7 @@ function notifyRecord_(payload) {
   }
 
   var ref = String(payload.ref || '').trim().slice(0, 80);
+  var accountKey = normalizeAccountKey_(payload.account || getNotifyAccount_());
   var cache = CacheService.getScriptCache();
   var lock = LockService.getScriptLock();
 
@@ -58,7 +71,7 @@ function notifyRecord_(payload) {
     }
     cache.put(minuteKey, String(used + 1), 120);
 
-    var dupKey = ref ? 'notify-ref-' + ref : '';
+    var dupKey = ref ? 'notify-ref-' + accountKey + '|' + ref : '';
     if (dupKey && cache.get(dupKey)) {
       return { duplicate: true, record: null };
     }
@@ -68,7 +81,8 @@ function notifyRecord_(payload) {
       customer: String(payload.customer || '').trim(),
       bank: String(payload.bank || 'กรุงไทย (KTB NEXT)').trim(),
       amount: amount,
-      note: String(payload.note || 'เงินเข้าอัตโนมัติจาก KTB NEXT').slice(0, 200)
+      note: String(payload.note || 'เงินเข้าอัตโนมัติจาก KTB NEXT').slice(0, 200),
+      account: accountKey
     });
 
     // สำคัญ: ทำเครื่องหมายว่าซ้ำ "หลัง" appendRow สำเร็จเท่านั้น
@@ -92,4 +106,15 @@ function setNotifyToken(token) {
   }
   PropertiesService.getScriptProperties().setProperty(NOTIFY_TOKEN_PROP, token);
   return { ok: true, hasToken: true };
+}
+
+/**
+ * กำหนดบัญชีที่รับรายการแจ้งเตือนอัตโนมัติ (รันจาก Apps Script editor ครั้งเดียว)
+ * ใช้เลข PromptPay เดียวกับที่กรอกในหน้าเว็บ เช่น setNotifyAccount('0812345678')
+ * เรียก setNotifyAccount('') เพื่อกลับไปใช้ "บัญชีหลัก"
+ */
+function setNotifyAccount(account) {
+  var key = normalizeAccountKey_(account);
+  PropertiesService.getScriptProperties().setProperty(NOTIFY_ACCOUNT_PROP, key);
+  return { ok: true, account: key };
 }

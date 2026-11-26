@@ -19,6 +19,17 @@
   var initialized = false;      // โหลดครั้งแรกยังไม่ประกาศเสียง
   var latestRecords = [];      // เก็บรายการล่าสุดไว้ใช้กับปุ่มในการ์ด
 
+  /* ---------- รหัสบัญชี/PromptPay (แยกรายการตามบัญชี) ---------- */
+
+  function currentAccount() {
+    return window.PayVoxAccount ? window.PayVoxAccount.get() : '';
+  }
+
+  function accountParams() {
+    var account = currentAccount();
+    return account ? { account: account } : null;
+  }
+
   function escapeHtml(value) {
     return String(value == null ? '' : value)
       .replace(/&/g, '&amp;')
@@ -304,8 +315,11 @@
 
   var knownIds = {};
   var inFlight = false;
+  var listEpoch = 0;          // กัน response ของบัญชีเก่ามาทับหลังเปลี่ยนบัญชี
+  var refreshAgain = false;   // ถ้าเปลี่ยนบัญชีตอน poll ค้างอยู่ ให้ดึงใหม่รอบถัดไป
 
-  function applyRecords(records) {
+  function applyRecords(records, epoch) {
+    if (epoch !== listEpoch) return;
     latestRecords = records || [];
     var fresh = [];
     (records || []).forEach(function (r) {
@@ -325,11 +339,17 @@
   }
 
   function refresh() {
-    if (inFlight) return Promise.resolve();
+    if (inFlight) {
+      refreshAgain = true;
+      return Promise.resolve();
+    }
     inFlight = true;
     var errors = [];
 
-    var listRequest = window.Api.request('list').then(applyRecords).catch(function (err) {
+    var epochAtListStart = listEpoch;
+    var listRequest = window.Api.request('list', null, accountParams()).then(function (records) {
+      applyRecords(records, epochAtListStart);
+    }).catch(function (err) {
       errors.push({ action: 'list', error: err });
       console.warn('ดึงข้อมูลจาก Apps Script ไม่สำเร็จ:', err && err.message ? err.message : err);
       var title = document.getElementById('voiceBannerTitle');
@@ -344,7 +364,7 @@
     });
 
     var epochAtStart = summaryEpoch;
-    var summaryRequest = window.Api.request('summary').then(function (summary) {
+    var summaryRequest = window.Api.request('summary', null, accountParams()).then(function (summary) {
       // ถ้ามีการรีเซ็ท/คืนค่าระหว่างรอ ให้ข้าม response เก่านี้ไป
       if (epochAtStart !== summaryEpoch) return summary;
       lastSummary = summary;
@@ -362,12 +382,42 @@
 
     return Promise.all([listRequest, summaryRequest]).then(function (result) {
       inFlight = false;
+      if (refreshAgain) {
+        refreshAgain = false;
+        return refresh();
+      }
       return { result: result, errors: errors };
     }, function (err) {
       inFlight = false;
       throw err;
     });
   }
+
+  /* ---------- เปลี่ยนบัญชี/PromptPay ของเครื่องนี้ ---------- */
+
+  window.changePayVoxAccount = function (value) {
+    var next = window.PayVoxAccount ? window.PayVoxAccount.set(value) : '';
+
+    // ล้างสถานะของบัญชีเก่าก่อน — ไม่ให้รายการเก่ามาประกาศเสียงทับบัญชีใหม่
+    listEpoch += 1;
+    summaryEpoch += 1;
+    knownIds = {};
+    latestRecords = [];
+    initialized = false;
+    lastSummary = null;
+
+    var listEl = document.getElementById('slipFeedList');
+    if (listEl) {
+      listEl.innerHTML = '<p class="font-body-md text-body-md text-on-surface-variant py-6 text-center leading-relaxed">กำลังโหลดรายการของบัญชีนี้…</p>';
+    }
+    var totalEl = document.getElementById('todayTotalAmount');
+    if (totalEl) totalEl.textContent = '฿0.00';
+    var subEl = document.getElementById('todayTotalSub');
+    if (subEl) subEl.textContent = 'กำลังโหลด…';
+
+    refresh();
+    return next;
+  };
 
   /* ---------- ปุ่ม "ซิงก์ธนาคาร" ให้ดึงข้อมูลจริง ---------- */
 
@@ -432,7 +482,7 @@
     var epoch = summaryEpoch;
     setResetLabel('กำลังรีเซ็ท…');
 
-    window.Api.request('resetSummary', {}).then(function (summary) {
+    window.Api.request('resetSummary', { account: currentAccount() }).then(function (summary) {
       if (epoch !== summaryEpoch) return;
       lastSummary = summary;
       renderTodayTotal(summary);
@@ -458,7 +508,7 @@
     summaryEpoch += 1;
     var epoch = summaryEpoch;
 
-    window.Api.request('resetSummary', { undo: true }).then(function (summary) {
+    window.Api.request('resetSummary', { undo: true, account: currentAccount() }).then(function (summary) {
       if (epoch !== summaryEpoch) return;
       lastSummary = summary;
       renderTodayTotal(summary);

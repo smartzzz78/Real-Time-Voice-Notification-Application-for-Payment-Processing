@@ -44,6 +44,7 @@
 กรอกยอดเงินที่รับ ข้อมูลจะถูกบันทึกลง <strong>Google Sheets</strong> ทันที
 รูปสลิปจะถูกเก็บใน <strong>Google Drive</strong> และหน้า "ตรวจสลิป" จะประกาศเสียงยอดเงินอัตโนมัติ
 </p>
+<p class="font-label-sm text-label-sm text-primary" id="moneyInAccount">บันทึกเข้าบัญชีหลัก</p>
 </section>
 
 <!-- Form -->
@@ -94,7 +95,8 @@
 </div></main>
 <nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(0,0,0,0.05)]"><div class="grid grid-cols-2 items-center h-16 px-1"><a aria-current="page" class="flex flex-col items-center justify-center h-12 gap-0.5 transition-colors text-primary font-bold" href="index.html"><svg class="w-[22px] h-[22px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3z"/><path d="m9 12 2 2 4-4"/></svg><span class="font-label-sm text-label-sm text-center">ตรวจสลิป &amp; เงินเข้า</span></a><a class="flex flex-col items-center justify-center h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" href="qr.html?v=7"><svg class="w-[22px] h-[22px] shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="3" height="3"/><rect x="18" y="14" width="3" height="3"/><rect x="14" y="18" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/></svg><span class="font-label-sm text-label-sm text-center">QR</span></a></div></nav>
 <script src="js/config.js?v=1"></script>
-<script src="js/api.js?v=1"></script>
+<script src="js/account.js?v=1"></script>
+<script src="js/api.js?v=2"></script>
 <script>
 (function () {
   'use strict';
@@ -145,6 +147,14 @@
   }
 
   const statusEl = document.getElementById('save-status');
+
+  // บันทึกเข้าบัญชี/PromptPay ของเครื่องนี้ (รหัสเดียวกับหน้า QR และหน้าตรวจสลิป)
+  function updateAccountLabel() {
+    var el = document.getElementById('moneyInAccount');
+    if (el && window.PayVoxAccount) el.textContent = 'บันทึกเข้าบัญชี: ' + PayVoxAccount.label();
+  }
+  updateAccountLabel();
+
   function setStatus(msg, isError) {
     statusEl.textContent = msg || '';
     statusEl.className = 'font-label-md text-label-md ' + (isError ? 'text-error font-bold' : 'text-primary font-semibold');
@@ -184,7 +194,8 @@
       ref: document.getElementById('in-ref').value.trim(),
       note: document.getElementById('in-note').value.trim(),
       fileName: '',
-      fileUrl: ''
+      fileUrl: '',
+      account: window.PayVoxAccount ? window.PayVoxAccount.get() : ''
     };
 
     const fileInput = document.getElementById('in-file');

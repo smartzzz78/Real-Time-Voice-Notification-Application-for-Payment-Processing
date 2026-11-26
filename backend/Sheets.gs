@@ -5,12 +5,25 @@
  * ถ้ายังไม่มี header จะเขียนให้อัตโนมัติในแถวแรกของชีต
  */
 
-var HEADERS = ['id', 'ref', 'customer', 'bank', 'amount', 'note', 'fileName', 'fileUrl', 'createdAt'];
+var HEADERS = ['id', 'ref', 'customer', 'bank', 'amount', 'note', 'fileName', 'fileUrl', 'createdAt', 'account'];
 var PRODUCT_HEADERS = ['id', 'name', 'price', 'active'];
 var PRODUCTS_SHEET = 'สินค้า';
 
 function getHeaders_() {
   return HEADERS.slice();
+}
+
+/**
+ * รหัสบัญชี/PromptPay ใช้แยกรายการของแต่ละบัญชี
+ * ทำให้พิมพ์ "081-234-5678" เครื่องหนึ่งกับ "0812345678" อีกเครื่องเห็นรายการชุดเดียวกัน
+ * ค่าว่าง = "บัญชีหลัก" (รายการเก่าก่อนมีฟีเจอร์นี้)
+ */
+function normalizeAccountKey_(value) {
+  return String(value == null ? '' : value)
+    .trim()
+    .replace(/[\s\-–—_]/g, '')
+    .toUpperCase()
+    .slice(0, 40);
 }
 
 function getSpreadsheet_() {
@@ -49,18 +62,32 @@ function getSheet_() {
  * เขียนเฉพาะเมื่อแถวแรกว่างเท่านั้น เพื่อไม่ทับข้อมูลเดิม
  */
 function ensureHeaders_(sheet) {
-  var firstCell = sheet.getRange(1, 1).getValue();
-  if (String(firstCell).trim() !== '') {
-    return; // มีข้อมูล/header อยู่แล้ว ไม่แตะ
+  if (String(sheet.getRange(1, 1).getValue()).trim() === '') {
+    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+    sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold');
+    sheet.setFrozenRows(1);
+    return;
   }
 
-  sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
-  sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold');
-  sheet.setFrozenRows(1);
+  // ย้าย schema: เติม header คolumn ใหม่ (account) โดยไม่ทับข้อมูลเดิม
+  // เขียนเฉพาะคอลัมน์ที่ว่างทั้งคอลัมน์เท่านั้น
+  var checkRows = Math.min(sheet.getLastRow(), 20);
+  for (var c = 1; c <= HEADERS.length; c++) {
+    if (String(sheet.getRange(1, c).getValue()).trim() !== '') continue;
+    var col = sheet.getRange(1, c, Math.max(checkRows, 1), 1).getValues();
+    var hasData = false;
+    for (var r = 0; r < col.length; r++) {
+      if (String(col[r][0]).trim() !== '') { hasData = true; break; }
+    }
+    if (hasData) continue;
+    sheet.getRange(1, c).setValue(HEADERS[c - 1]);
+    sheet.getRange(1, c).setFontWeight('bold');
+  }
 }
 
-function listRecords_(limitParam) {
+function listRecords_(limitParam, accountParam) {
   var limit = parseInt(limitParam, 10);
+  var accountKey = normalizeAccountKey_(accountParam);
   if (!limit || limit < 1 || limit > 500) {
     limit = 100;
   }
@@ -74,6 +101,10 @@ function listRecords_(limitParam) {
 
   for (var i = 0; i < values.length; i++) {
     var row = values[i];
+
+    // แยกรายการตามบัญชี/PromptPay — รหัสตรงกัน (คนละเครื่องได้) จึงเห็นชุดเดียวกัน
+    if (normalizeAccountKey_(row[9]) !== accountKey) continue;
+
     var id = String(row[0]).trim();
 
     // รองรับแถวที่พิมพ์เพิ่มเองใน Sheet (ไม่ได้ใส่ id):
@@ -102,7 +133,8 @@ function listRecords_(limitParam) {
       note: String(row[5] || ''),
       fileName: String(row[6] || ''),
       fileUrl: String(row[7] || ''),
-      createdAt: row[8] instanceof Date ? row[8].toISOString() : String(row[8] || '')
+      createdAt: row[8] instanceof Date ? row[8].toISOString() : String(row[8] || ''),
+      account: normalizeAccountKey_(row[9])
     });
   }
 
@@ -119,8 +151,14 @@ var TOTAL_RESET_AT_PROP = 'TOTAL_RESET_AT';
  * หมายเหตุ: ยอดรวมยังรีเซ็ทเองทุกเที่ยงคืนตามเวลาไทยอยู่แล้ว
  * ค่านี้ใช้เมื่อต้องการรีเซ็ทกลางวัน (เช่น เริ่มรอบใหม่หลังปิดร้าน)
  */
-function getTotalResetAt_() {
-  var raw = PropertiesService.getScriptProperties().getProperty(TOTAL_RESET_AT_PROP);
+function resetAtPropName_(accountKey) {
+  var key = normalizeAccountKey_(accountKey);
+  // ค่าว่างใช้ property เดิม เพื่อไม่ให้การรีเซ็ทของผู้ใช้เดิมหาย
+  return key ? TOTAL_RESET_AT_PROP + '_' + key : TOTAL_RESET_AT_PROP;
+}
+
+function getTotalResetAt_(accountKey) {
+  var raw = PropertiesService.getScriptProperties().getProperty(resetAtPropName_(accountKey));
   if (!raw) return null;
   var d = new Date(raw);
   return isNaN(d.getTime()) ? null : d;
@@ -132,18 +170,19 @@ function getTotalResetAt_() {
  *   { undo: true } -> ล้างการรีเซ็ท กลับไปนับยอดทั้งวันตามเดิม
  * คืนค่าสรุปชุดเดียวกับ action=summary เพื่อให้หน้าเว็บอัปเดตได้ทันที
  */
-function resetSummary_(payload) {
+function resetSummary_(payload, accountParam) {
   payload = payload || {};
   var props = PropertiesService.getScriptProperties();
+  var propName = resetAtPropName_(accountParam);
   var undo = payload.undo === true || String(payload.undo) === 'true';
 
   if (undo) {
-    props.deleteProperty(TOTAL_RESET_AT_PROP);
+    props.deleteProperty(propName);
   } else {
-    props.setProperty(TOTAL_RESET_AT_PROP, new Date().toISOString());
+    props.setProperty(propName, new Date().toISOString());
   }
 
-  return summarizeRecords_();
+  return summarizeRecords_(accountParam);
 }
 
 /**
@@ -154,7 +193,8 @@ function resetSummary_(payload) {
  * โดยเวลาตัดต้น = max(เที่ยงคืนของวันนี้, เวลาที่กดรีเซ็ท)
  * => รีเซ็ทเองทุกเที่ยงคืน และกดรีเซ็ทกลางวันได้ด้วย
  */
-function summarizeRecords_() {
+function summarizeRecords_(accountParam) {
+  var accountKey = normalizeAccountKey_(accountParam);
   var sheet = getSheet_();
   var lastRow = sheet.getLastRow();
   var tz = Session.getScriptTimeZone();
@@ -167,7 +207,7 @@ function summarizeRecords_() {
     todayParts.join('-') + ' 00:00:00', tz, 'yyyy-MM-dd HH:mm:ss'
   );
 
-  var resetAt = getTotalResetAt_();
+  var resetAt = getTotalResetAt_(accountKey);
   // ถ้ารีเซ็ทไว้เมื่อวาน/ก่อนหน้า ถือว่าเที่ยงคืนของวันนี้ตัดยอดไปแล้ว
   var resetActive = !!(resetAt && resetAt.getTime() > todayStart.getTime());
   var cutoff = resetActive ? resetAt : todayStart;
@@ -190,6 +230,8 @@ function summarizeRecords_() {
 
   for (var i = 0; i < values.length; i++) {
     var row = values[i];
+    if (normalizeAccountKey_(row[9]) !== accountKey) continue;
+
     var amount = Number(String(row[4]).replace(/[,\s฿]/g, ''));
     if (!isFinite(amount)) amount = 0;
 
@@ -228,6 +270,7 @@ function createRecord_(payload) {
   }
 
   var customer = String(payload.customer || '').trim();
+  var accountKey = normalizeAccountKey_(payload.account);
   var record = {
     id: String(Date.now()),
     ref: String(payload.ref || '').trim(),
@@ -237,8 +280,15 @@ function createRecord_(payload) {
     note: String(payload.note || ''),
     fileName: String(payload.fileName || ''),
     fileUrl: String(payload.fileUrl || ''),
-    createdAt: new Date()
+    createdAt: new Date(),
+    account: accountKey
   };
+
+  // dryRun ให้หน้าเว็บ/QA ทดสอบการแปลงรหัสบัญชีโดยไม่เขียนลงชีต
+  if (payload.dryRun === true || String(payload.dryRun) === 'true') {
+    record.createdAt = record.createdAt.toISOString();
+    return record;
+  }
 
   var sheet = getSheet_();
   sheet.appendRow([
@@ -250,7 +300,8 @@ function createRecord_(payload) {
     record.note,
     record.fileName,
     record.fileUrl,
-    record.createdAt
+    record.createdAt,
+    record.account
   ]);
 
   record.createdAt = record.createdAt.toISOString();

@@ -9,9 +9,19 @@
     return url;
   }
 
-  async function request(action, payload) {
+  async function request(action, payload, params) {
     var url = getApiUrl();
     var res;
+
+    // query string สำหรับ action แบบ GET (เช่น account = รหัสบัญชี/PromptPay)
+    var query = '';
+    if (params) {
+      Object.keys(params).forEach(function (key) {
+        var value = params[key];
+        if (value === undefined || value === null || value === '') return;
+        query += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(value);
+      });
+    }
 
     if (payload) {
       // ใช้ text/plain เพื่อเลี่ยง CORS preflight (Apps Script ไม่รองรับ OPTIONS)
@@ -21,7 +31,7 @@
         body: JSON.stringify({ action: action, payload: payload })
       });
     } else {
-      res = await fetch(url + '?action=' + encodeURIComponent(action));
+      res = await fetch(url + '?action=' + encodeURIComponent(action) + query);
     }
 
     if (!res.ok) {

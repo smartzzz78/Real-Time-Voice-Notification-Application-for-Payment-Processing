@@ -41,7 +41,7 @@
       <input class="pv-input" id="promptpay-id" inputmode="numeric" maxlength="13" placeholder="เช่น 0812345678">
       <label class="pv-label" for="receiver-name">ชื่อผู้รับเงิน</label>
       <input class="pv-input" id="receiver-name" maxlength="60" placeholder="เช่น กาแฟสดสุขใจ">
-      <p class="pv-note">ข้อมูลนี้เก็บเฉพาะในเครื่องนี้เท่านั้น ไม่ถูกส่งขึ้น GitHub</p>
+      <p class="pv-note">เลขนี้ยังใช้เป็นรหัสแยกรายการเงินเข้าของบัญชีด้วย (ใส่เลขเดียวกันบน 2 เครื่อง = เห็นรายการเดียวกัน) • ข้อมูลเก็บเฉพาะในเครื่อง</p>
     </section>
 
     <section class="pv-card">
@@ -89,7 +89,8 @@
 <div class="pv-toast" id="toast"></div>
 
 <script src="js/config.js?v=1"></script>
-<script src="js/api.js?v=1"></script>
+<script src="js/account.js?v=1"></script>
+<script src="js/api.js?v=2"></script>
 <script src="js/qrcode.js?v=1"></script><script>
 (function(){
   'use strict';
@@ -106,14 +107,15 @@
   function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 
   function loadSettings(){
+    // รหัสบัญชี/PromptPay ตัวเดียวกับหน้าตรวจสลิป — แก้จากหน้าไหนก็มีผลทั้งแอป
+    if (window.PayVoxAccount) document.getElementById('promptpay-id').value = PayVoxAccount.get();
     try{
-      document.getElementById('promptpay-id').value = localStorage.getItem('payvoxPromptPay') || '';
       document.getElementById('receiver-name').value = localStorage.getItem('payvoxReceiver') || '';
     }catch(e){}
   }
   function persistSettings(){
+    if (window.PayVoxAccount) PayVoxAccount.set(document.getElementById('promptpay-id').value);
     try{
-      localStorage.setItem('payvoxPromptPay', document.getElementById('promptpay-id').value.trim());
       localStorage.setItem('payvoxReceiver', document.getElementById('receiver-name').value.trim());
     }catch(e){}
   }
