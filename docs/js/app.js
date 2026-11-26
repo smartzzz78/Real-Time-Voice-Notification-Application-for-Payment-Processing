@@ -27,28 +27,39 @@
       .replace(/"/g, '&quot;');
   }
 
+  var BANGKOK_TZ = 'Asia/Bangkok';
+
   function fmtTime(iso) {
     if (!iso) return '--:--:--';
     var d = new Date(iso);
     if (isNaN(d.getTime())) return '--:--:--';
-    return d.toLocaleTimeString('th-TH', { hour12: false });
+    return d.toLocaleTimeString('th-TH', { hour12: false, timeZone: BANGKOK_TZ });
   }
 
   function fmtDateTime(iso) {
     if (!iso) return 'ไม่ระบุเวลา';
     var d = new Date(iso);
     if (isNaN(d.getTime())) return 'ไม่ระบุเวลา';
-    var time = d.toLocaleTimeString('th-TH', { hour12: false }) + ' น.';
+    var time = d.toLocaleTimeString('th-TH', { hour12: false, timeZone: BANGKOK_TZ }) + ' น.';
     if (isToday(iso)) return 'วันนี้, ' + time;
     return d.toLocaleDateString('th-TH', {
-      day: '2-digit', month: '2-digit', year: 'numeric'
+      day: '2-digit', month: '2-digit', year: 'numeric', timeZone: BANGKOK_TZ
     }) + ', ' + time;
+  }
+
+  // เทียบวันตาม Asia/Bangkok ให้ตรงกับฝั่ง Apps Script เสมอ
+  function bangkokDateKey(iso) {
+    var d = iso ? new Date(iso) : new Date();
+    if (isNaN(d.getTime())) return '';
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: BANGKOK_TZ, year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(d);
   }
 
   function isToday(iso) {
     if (!iso) return false;
-    var d = new Date(iso);
-    return !isNaN(d.getTime()) && d.toDateString() === new Date().toDateString();
+    var key = bangkokDateKey(iso);
+    return !!key && key === bangkokDateKey();
   }
 
   /* ---------- การ์ดในฟีด ---------- */
@@ -245,7 +256,9 @@
   // ประกาศหลายรายการต่อกันโดยไม่ซ้อนเสียงกัน
   function announceNewRecords(records) {
     var sorted = records.slice().sort(function (a, b) {
-      return (Number(a.id) || 0) - (Number(b.id) || 0);
+      var ta = Date.parse(a.createdAt) || Number(a.id) || 0;
+      var tb = Date.parse(b.createdAt) || Number(b.id) || 0;
+      return ta - tb;
     });
     sorted.forEach(function (rec, idx) {
       setTimeout(function () { speakRecord(rec); }, idx * 4500);

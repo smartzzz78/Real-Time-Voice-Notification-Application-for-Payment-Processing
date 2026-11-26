@@ -14,11 +14,8 @@ function getHeaders_() {
 }
 
 function getSpreadsheet_() {
-  var config = getConfig_();
-  if (config.spreadsheetId) {
-    return SpreadsheetApp.openById(config.spreadsheetId);
-  }
-  throw new Error('ไม่พบสเปรดชีต กรุณารัน setupDatabase() ก่อน');
+  // getConfig_() รองรับทั้ง SPREADSHEET_ID และสคริปต์ที่ผูกกับชีตอยู่แล้ว
+  return getConfig_().spreadsheet;
 }
 
 /**
@@ -28,7 +25,7 @@ function getSpreadsheet_() {
  */
 function getSheet_() {
   var config = getConfig_();
-  var ss = SpreadsheetApp.openById(config.spreadsheetId);
+  var ss = config.spreadsheet;
   var sheet = null;
 
   if (config.sheetName) {
@@ -88,7 +85,8 @@ function listRecords_(limitParam) {
         if (String(row[c]).trim() !== '') { hasData = true; break; }
       }
       if (!hasData) continue;
-      id = 'manual-' + [row[1], row[2], row[3], row[4], row[5], row[8]].join('|');
+      // ใส่เลขแถวด้วย เพื่อไม่ให้แถวเหมือนกันสองแถวได้ id ซ้ำ
+      id = 'manual-' + (i + 2) + '-' + [row[1], row[2], row[3], row[4], row[5], row[8]].join('|');
     }
 
     // แปลงยอดเงินแบบทนทาน: 1500 / "1,500" / "฿1,500.00" ทำงานได้ทั้งหมด
@@ -286,13 +284,17 @@ function listProducts_() {
     var row = values[i];
     var name = String(row[1] || '').trim();
     if (!name) continue;
+    var activeRaw = String(row[3] === '' || row[3] == null ? 'true' : row[3]).trim().toLowerCase();
+    if (activeRaw === 'false' || activeRaw === '0' || activeRaw === 'no' || activeRaw === 'inactive') {
+      continue; // สินค้าปิดขาย: ไม่โชว์ในหน้า QR
+    }
     var price = Number(String(row[2]).replace(/[,\s฿]/g, ''));
     if (!isFinite(price) || price < 0) price = 0;
     products.push({
       id: String(row[0] || ''),
       name: name,
       price: Math.round(price * 100) / 100,
-      active: String(row[3] || 'true').toLowerCase() !== 'false'
+      active: true
     });
   }
   return products;

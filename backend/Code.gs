@@ -12,10 +12,17 @@
  *   POST { action: 'resetSummary', payload: {} }   -> เริ่มนับยอดวันนี้ใหม่ (undo:true = คืนค่า)
  *   POST { action: 'create', payload: {...} }      -> บันทึกรายการเงินเข้า
  *   POST { action: 'upload', payload: {...} }      -> อัปโหลดรูปสลิปขึ้น Drive
+ *   POST { action: 'notify', payload: {...} }       -> รับแจ้งเงินเข้าจาก Android (มี token)
  *   GET  ?action=listProducts                       -> รายการสินค้าและราคา
  *   POST { action: 'saveProduct', payload: {...} }  -> เพิ่ม/แก้สินค้า
  *   POST { action: 'deleteProduct', payload:{} }    -> ลบสินค้า
  */
+
+var GET_ACTIONS = { ping: true, list: true, summary: true, listProducts: true };
+var POST_ACTIONS = {
+  create: true, upload: true, notify: true, resetSummary: true,
+  saveProduct: true, deleteProduct: true
+};
 
 function doGet(e) {
   return handleRequest_(e, 'GET');
@@ -37,6 +44,14 @@ function handleRequest_(e, method) {
     var action = String(body.action || params.action || '');
     var payload = body.payload || body;
     var data;
+
+    // กันการแก้ข้อมูลผ่านลิ้งก์ GET (Web App เปิดให้ anonymous)
+    if (method === 'GET' && !GET_ACTIONS[action]) {
+      throw new Error('Action นี้ต้องใช้ POST: ' + action);
+    }
+    if (method === 'POST' && !POST_ACTIONS[action]) {
+      throw new Error('Action นี้ใช้ GET ได้อย่างเดียว: ' + action);
+    }
 
     switch (action) {
       case 'ping':
@@ -145,6 +160,7 @@ function getConfig_() {
   }
 
   return {
+    spreadsheet: ss,
     spreadsheetId: ss.getId(),
     spreadsheetUrl: ss.getUrl(),
     sheetName: props.getProperty('SHEET_NAME') || ''

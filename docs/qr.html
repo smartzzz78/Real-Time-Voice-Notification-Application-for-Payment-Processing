@@ -112,9 +112,9 @@
 </nav>
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js"></script>
-<script src="js/api.js"></script>
-<script src="js/qrcode.js"></script>
+<script src="js/config.js?v=1"></script>
+<script src="js/api.js?v=1"></script>
+<script src="js/qrcode.js?v=1"></script>
 <script>
 (function(){
   'use strict';
@@ -146,8 +146,10 @@
   async function loadProducts(){
     var box = document.getElementById('product-list');
     try{
+      var previous = quantities;
+      quantities = {};
       products = await window.Api.request('listProducts');
-      products.forEach(function(p){ quantities[p.id] = 0; });
+      products.forEach(function(p){ quantities[p.id] = previous[p.id] || 0; });
       renderProducts();
     }catch(err){
       box.className = 'empty';
@@ -231,7 +233,7 @@
     if(qrLibPromise) return qrLibPromise;
     qrLibPromise = new Promise(function(resolve, reject){
       var s = document.createElement('script');
-      s.src = 'js/qrcode.js?v=2';
+      s.src = 'js/qrcode.js?v=1';
       s.onload = function(){
         if(typeof window.qrcode === 'function') resolve();
         else reject(new Error('ไฟล์สร้าง QR ไม่ถูกต้อง'));

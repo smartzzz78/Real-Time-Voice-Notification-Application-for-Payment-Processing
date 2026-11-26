@@ -22,6 +22,7 @@
 
 - หน้า `qr.html` (เมนู **QR**) อ่านรายการสินค้าจากชีต **สินค้า** ใน Google Sheet เดิม
 - โครงสร้างชีตสินค้า: `id | name | price | active` — เพิ่ม/แก้/ลบได้จากหน้า QR
+  (ตั้ง `active` เป็น `false` ในชีตเพื่อซ่อนสินค้าที่ปิดขาย ไม่ให้โชว์/สร้าง QR)
 - ตัวอย่าง: ขนม 2 ชิ้น × 5 บาท = **10 บาท**
 - ระบบสร้าง payload ตามมาตรฐาน EMV (มี CRC16) สำหรับ PromptPay แบบระบุจำนวนเงิน
 - **เลข PromptPay และชื่อผู้รับเก็บใน `localStorage` ของเครื่องเท่านั้น** ไม่ส่งขึ้นเซิร์ฟเวอร์/Repo
@@ -186,6 +187,7 @@ gh api -X POST repos/{owner}/Real-Time-Voice-Notification-Application-for-Paymen
 
 หมายเหตุ: frontend ส่ง POST ด้วย `Content-Type: text/plain` เพื่อเลี่ยง CORS preflight
 เพราะ Apps Script ไม่รองรับ request method `OPTIONS`
+backend บังคับ method ตามตารานี้ — action ที่แก้ข้อมูลเรียกผ่าน GET จะถูกปฏิเสธ
 
 ## เสียงประกาศ (จากเครื่อง)
 
@@ -322,8 +324,9 @@ POST action=notify  + token  ──────────────► Apps 
   เก็บแยกที่ `Documents\PayVox\` พร้อม `README-APK.txt`
 - **keystore ห้ามหายและห้าม commit** — ถ้าหายจะอัปเดตทับแอปเดิมไม่ได้อีก
 - ไม่ต้องใช้ `assetlinks.json` แล้ว (ไม่ใช่ TWA) แต่ยังเก็บไว้ได้ไม่เสียหาย
-- WebView ในแอปตั้ง `mediaPlaybackRequiresUserGesture(false)` → เสียงกริ่ง/เสียง AI เล่นเองได้
-- "เสียงเครื่อง" ในแอปใช้ **Android TextToSpeech** ผ่านสะพาน `window.AndroidVoice` (ไม่พึ่ง speechSynthesis ของ WebView)
+- WebView ในแอปตั้ง `mediaPlaybackRequiresUserGesture(false)` → เสียงกริ่ง/เสียงประกาศจากเครื่องเล่นเองได้
+- หน้าเว็บใช้ **Web Speech API (`speechSynthesis`, `th-TH`)** โดยตรง — ไม่มี AI TTS / Gemini
+  ส่วนตัวรับแจ้งเตือน KTB ใน APK ใช้ **Android TextToSpeech** ของตัวแอปเอง (คนละทางกับหน้าเว็บ)
 - build ใหม่เฉพาะเมื่อเปลี่ยนชื่อแอป / ไอคอน / URL เว็บ / token / ตัวอ่านยอด
   (แก้โค้ดเว็บไม่ต้อง build ใหม่):
 
