@@ -210,10 +210,8 @@
     var text = announceText(rec);
     if (typeof playHarmonicDingDong === 'function') playHarmonicDingDong();
     setTimeout(function () {
-      if (window.AiVoice && window.AiVoice.speak) {
-        window.AiVoice.speak(text); // AI voice (fallback เป็นเสียงระบบอัตโนมัติ)
-      } else if (typeof speakThai === 'function') {
-        speakThai(text);
+      if (typeof speakThai === 'function') {
+        speakThai(text); // เสียงจากเครื่อง (Web Speech API)
       }
     }, 300);
 

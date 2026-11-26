@@ -12,9 +12,6 @@
  *   POST { action: 'resetSummary', payload: {} }   -> เริ่มนับยอดวันนี้ใหม่ (undo:true = คืนค่า)
  *   POST { action: 'create', payload: {...} }      -> บันทึกรายการเงินเข้า
  *   POST { action: 'upload', payload: {...} }      -> อัปโหลดรูปสลิปขึ้น Drive
- *   GET  ?action=voiceConfig                       -> สถานะคีย์ AI Voice + โหมดเสียง
- *   POST { action: 'setVoiceConfig', payload: {} } -> ตั้งคีย์ / โหมดเสียง AI
- *   POST { action: 'speak', payload: {...} }        -> สร้างเสียง AI (base64)
  *   GET  ?action=listProducts                       -> รายการสินค้าและราคา
  *   POST { action: 'saveProduct', payload: {...} }  -> เพิ่ม/แก้สินค้า
  *   POST { action: 'deleteProduct', payload:{} }    -> ลบสินค้า
@@ -57,20 +54,11 @@ function handleRequest_(e, method) {
       case 'create':
         data = createRecord_(payload);
         break;
-            case 'notify':
+      case 'notify':
         data = notifyRecord_(payload);
         break;
       case 'upload':
         data = uploadFile_(payload);
-        break;
-      case 'voiceConfig':
-        data = getVoiceStatus_();
-        break;
-      case 'setVoiceConfig':
-        data = setVoiceConfig_(payload);
-        break;
-      case 'speak':
-        data = speak_(payload);
         break;
       case 'listProducts':
         data = listProducts_();

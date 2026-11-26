@@ -92,10 +92,9 @@
 
 <div class="h-4"></div>
 </div></main>
-<nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(0,0,0,0.05)]"><div class="grid grid-cols-3 items-center h-16 px-1"><a aria-current="page" class="flex flex-col items-center justify-center h-12 gap-0.5 transition-colors text-primary font-bold" href="index.html"><svg class="w-[22px] h-[22px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3z"/><path d="m9 12 2 2 4-4"/></svg><span class="font-label-sm text-label-sm text-center">ตรวจสลิป &amp; เงินเข้า</span></a><a class="flex flex-col items-center justify-center h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" href="qr.html?v=4"><svg class="w-[22px] h-[22px] shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="3" height="3"/><rect x="18" y="14" width="3" height="3"/><rect x="14" y="18" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/></svg><span class="font-label-sm text-label-sm text-center">QR</span></a><a class="flex flex-col items-center justify-center h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" href="settings-voice.html"><svg class="w-[22px] h-[22px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/></svg><span class="font-label-sm text-label-sm text-center">ตั้งค่าเสียง</span></a></div></nav>
+<nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(0,0,0,0.05)]"><div class="grid grid-cols-2 items-center h-16 px-1"><a aria-current="page" class="flex flex-col items-center justify-center h-12 gap-0.5 transition-colors text-primary font-bold" href="index.html"><svg class="w-[22px] h-[22px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3z"/><path d="m9 12 2 2 4-4"/></svg><span class="font-label-sm text-label-sm text-center">ตรวจสลิป &amp; เงินเข้า</span></a><a class="flex flex-col items-center justify-center h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" href="qr.html?v=5"><svg class="w-[22px] h-[22px] shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="3" height="3"/><rect x="18" y="14" width="3" height="3"/><rect x="14" y="18" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/></svg><span class="font-label-sm text-label-sm text-center">QR</span></a></div></nav>
 <script src="js/config.js"></script>
 <script src="js/api.js"></script>
-<script src="js/ai-voice.js?v=2"></script>
 <script>
 (function () {
   'use strict';
@@ -155,7 +154,7 @@
   window.triggerTestChime = function () {
     getAudioContext();
     playHarmonicDingDong();
-    setTimeout(function () { window.AiVoice.speak('ระบบบันทึกเงินเข้าพร้อมใช้งานค่ะ'); }, 260);
+    setTimeout(function () { speakThai('ระบบบันทึกเงินเข้าพร้อมใช้งานค่ะ'); }, 260);
     setStatus('ระบบเสียงพร้อมใช้งาน', false);
   };
 
@@ -164,9 +163,9 @@
     getAudioContext();
     playHarmonicDingDong();
     setTimeout(function () {
-      window.AiVoice.speak('เงินเข้า 150 บาท');
+      speakThai('เงินเข้า 150 บาท');
     }, 300);
-    setStatus('ทดสอบเสียงประกาศแล้ว (AI voice) ถ้าไม่ได้ยินให้แตะหน้าจอก่อนแล้วลองอีกครั้ง', false);
+    setStatus('ทดสอบเสียงประกาศแล้ว (เสียงจากเครื่อง) ถ้าไม่ได้ยินให้แตะหน้าจอก่อนแล้วลองอีกครั้ง', false);
   });
 
   // ---- บันทึกเงินเข้า ----
@@ -214,7 +213,7 @@
 
       playHarmonicDingDong();
       setTimeout(function () {
-        window.AiVoice.speak('เงินเข้า ' + (Math.round(amount * 100) / 100) + ' บาท');
+        speakThai('เงินเข้า ' + (Math.round(amount * 100) / 100) + ' บาท');
       }, 300);
       setStatus('บันทึกเรียบร้อย: +' + amount.toFixed(2) + ' บาท' + (payload.customer ? ' จาก ' + payload.customer : ''), false);
 

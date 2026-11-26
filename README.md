@@ -3,19 +3,19 @@
 แอปแจ้งเตือนเงินเข้าแบบเรียลไทม์ด้วยเสียง พร้อมฟีดรายการและเครื่องมือตรวจสลิป ใช้ **GitHub Pages** เป็น frontend และ **Google Apps Script** เป็น backend
 โดยใช้ **Google Sheets** เป็นฐานข้อมูล และ **Google Drive** เก็บไฟล์แนบ
 
-แอปมีหน้าที่ใช้จริง 4 หน้า (เมนูล่างมี 3 แท็บ):
+แอปมีหน้าที่ใช้จริง 3 หน้า (เมนูล่างมี 2 แท็บ):
 
 | หน้า | ไฟล์ | คำอธิบาย |
 |---|---|---|
 | ตรวจสลิป & เงินเข้า (หน้าหลัก) | `docs/index.html` | ฟีดรายการเงินเข้าจาก Google Sheets + **อ่านออกเสียงยอดเงินเข้าอัตโนมัติ** (poll ทุก 15 วิ) + ปุ่มยืนยันสลิป |
-| QR ชำระเงิน | `docs/qr.html` | เลือกสินค้า → ใส่จำนวน → คำนวณยอด → สร้าง QR PromptPay (แท็บที่ 3) |
-| ตั้งค่าเสียง | `docs/settings-voice.html` | เลือกเสียงพากย์ AI (persona), ทดสอบฟังเสียง, วางคีย์ Gemini |
+| QR ชำระเงิน | `docs/qr.html` | เลือกสินค้า → ใส่จำนวน → คำนวณยอด → สร้าง QR PromptPay (แท็บที่ 2) |
 | เพิ่มเงินเข้า | `docs/money-in.html` | ฟอร์มบันทึกยอดรับเงิน บันทึกลง Sheets + อัปโหลดรูปสลิปขึ้น Drive (เปิดจากลิงก์ "＋ เพิ่มเงินเข้า" ในการ์ดรายการล่าสุด ไม่ได้อยู่ในเมนูล่าง) |
 
 > หมายเหตุ: หน้าเดโม/ของเสริมเดิม (`dashboard.html`, `settings-shift.html`, `counter-live.html`) ถูกลบออกแล้ว
 > — ถ้าต้องการกลับมา ดูได้จาก history ของ git
 
 เสียงประกาศพูดแค่ยอดเงิน เช่น **"เงินเข้า 150 บาท"** (ไม่พูดชื่อลูกค้า) ส่วนชื่อลูกค้ายังแสดงบนจอตามปกติ
+เสียงที่ใช้เป็น **เสียงพูดจากเครื่อง (Web Speech API)** เท่านั้น — ไม่มีการเรียก AI TTS ไม่ต้องใส่คีย์ Gemini ไม่กินโควตา/เน็ต
 
 ## ระบบ QR PromptPay
 
@@ -40,19 +40,16 @@
 ├─ docs/                 # Frontend (GitHub Pages เสิร์ฟจากโฟลเดอร์นี้)
 │  ├─ index.html         # หน้าหลัก: ตรวจสลิป + อ่านเสียงยอดเงินเข้า
 │  ├─ qr.html            # หน้า QR: คำนวณยอดจากสินค้า + QR PromptPay
-│  ├─ settings-voice.html # ตั้งค่าเสียง: persona, ทดสอบเสียง, คีย์ Gemini
 │  ├─ money-in.html      # ฟอร์มบันทึกเงินเข้า (เปิดจากลิงก์ในหน้าแรก)
 │  └─ js/
 │     ├─ config.js       # ใส่ Web App URL ที่นี่
 │     ├─ api.js          # ตัวเรียก API
-│     ├─ ai-voice.js     # เสียง AI (Gemini TTS) + fallback เสียงระบบ
 │     └─ app.js          # ดึงข้อมูล + อ่านเสียงยอดเงินเข้า (ใช้ใน index.html)
 ├─ backend/              # Apps Script (clasp)
 │  ├─ appsscript.json
 │  ├─ Code.gs            # doGet/doPost + ping/setupDatabase()
 │  ├─ Sheets.gs          # CRUD กับ Google Sheets
 │  ├─ Drive.gs           # อัปโหลดไฟล์ขึ้น Drive
-│  └─ Voice.gs           # Gemini TTS + เก็บ API key (Script Properties)
 ├─ scripts/
 │  ├─ login.ps1          # เปิดหน้าต่าง login GitHub + Google
 │  ├─ set-api-url.ps1    # อัปเดต API URL ใน frontend
@@ -181,9 +178,6 @@ gh api -X POST repos/{owner}/Real-Time-Voice-Notification-Application-for-Paymen
 | `create` | POST | `{ action:'create', payload:{ amount, customer, bank, ref, note, fileName, fileUrl } }` | record ที่สร้าง |
 | `notify` | POST | `{ action:'notify', payload:{ token, amount, ref?, customer?, bank?, note?, dryRun? } }` | รับเงินเข้าอัตโนมัติจากแอป Android (ดูหัวข้อ "เงินเข้าอัตโนมัติ") — `{ duplicate, record }` |
 | `upload` | POST | `{ action:'upload', payload:{ filename, mimeType, base64 } }` | ข้อมูลไฟล์บน Drive |
-| `voiceConfig` | GET | `?action=voiceConfig` | `{ hasKey, model, voice }` — สถานะเสียง AI (ไม่เปิดคีย์) |
-| `setVoiceConfig` | POST | `{ action:'setVoiceConfig', payload:{ apiKey?, voice?, model? } }` | ตั้งคีย์ / โหมดเสียง AI |
-| `speak` | POST | `{ action:'speak', payload:{ text, voice?, model? } }` | `{ audioBase64, mimeType }` เสียงจาก Gemini TTS |
 | `listProducts` | GET | `?action=listProducts` | รายการสินค้าจากชีต "สินค้า" |
 | `saveProduct` | POST | `{ action:'saveProduct', payload:{ id?, name, price } }` | เพิ่ม/แก้สินค้า |
 | `deleteProduct` | POST | `{ action:'deleteProduct', payload:{ id } }` | ลบสินค้า |
@@ -191,45 +185,19 @@ gh api -X POST repos/{owner}/Real-Time-Voice-Notification-Application-for-Paymen
 หมายเหตุ: frontend ส่ง POST ด้วย `Content-Type: text/plain` เพื่อเลี่ยง CORS preflight
 เพราะ Apps Script ไม่รองรับ request method `OPTIONS`
 
-## เสียง AI (Gemini TTS)
+## เสียงประกาศ (จากเครื่อง)
 
-เสียงประกาศเงินเข้าทั้งหมดสร้างด้วย **Gemini TTS** (โมเดล `gemini-3.8-flash-tts`) — เสียงหญิงไทยสดใสกระตือรือร้นคล้ายตัวอย่างที่ให้มา
-
-- **คีย์ API เก็บบนเซิร์ฟเวอร์เท่านั้น** (Script Properties `GEMINI_API_KEY`) — ไม่มีคีย์ใน frontend/repo
-- ตั้งคีย์ครั้งแรกได้จากหน้า **ตั้งค่าเสียง** (การ์ด "คีย์ Gemini (เสียง AI)") โดยวางคีย์แล้วกดบันทึก
-  หรือตั้งเองใน Apps Script → Project Settings → Script properties → `GEMINI_API_KEY`
-- เมื่อมีคีย์อยู่แล้ว การเปลี่ยนคีย์ผ่านหน้าเว็บจะถูกปฏิเสธ (กันคนอื่นเขียนทับ) — ต้องลบ `GEMINI_API_KEY` ใน Script Properties ก่อน
-- เลือกน้ำเสียงได้จากการ์ด persona ในหน้า **ตั้งค่าเสียง** แล้วระบบจะใช้เสียงนั้นประกาศทุกหน้า:
-
-| Persona | โหมดเสียง Gemini | ลักษณะ |
-|---|---|---|
-| น้องมะลิ (แนะนำ) | Zephyr | หญิง สดใส กระตือรือร้น — ตรงกับตัวอย่างมากที่สุด |
-| น้องใบเฟิร์น | Aoede | หญิง หวาน นุ่มนวล |
-| พี่กานต์ | Orus | ชาย หนักแน่น น่าเชื่อถือ |
-| น้องมีนา | Leda | หญิง สดใส กระตุ้นเต้น |
-
-- ถ้าเรียก AI ไม่สำเร็จ (ไม่มีคีย์/โควต้าหมด/ออฟไลน์) ระบบจะใช้เสียงระบบ (Web Speech API) พูดแทนอัตโนมัติ
-
-### เลือกแหล่งเสียง: AI หรือเสียงเครื่อง
-
-หน้า **ตั้งค่าเสียง** มีการ์ด **"แหล่งเสียงที่ใช้ประกาศ"** ให้เลือก 2 แบบ
-
-| ตัวเลือก | พฤติกรรม |
-|---|---|
-| **เสียง AI (Gemini)** — ค่าเริ่มต้น | เรียก `action=speak` ไปสร้างเสียงจาก Gemini แล้วเล่น (กินเน็ต/โควตา) ถ้าล้มเหลวจะสลับเป็นเสียงเครื่องให้อัตโนมัติ |
-| **เสียงเครื่อง** | ใช้ `speechSynthesis` ของอุปกรณ์ทันที — **ไม่เรียก API เลย** ไม่กินโควตา เหมาะกับตอนเน็ตไม่ดีหรือโควตาหมด |
-
-- ค่าถูกจำไว้ **แยกตามเครื่อง/เบราว์เซอร์** (`localStorage` คีย์ `voiceSource`) — เปลี่ยนที่มือถือเครื่องหนึ่งไม่กระทบเครื่องอื่น
-- ตัวเลือกนี้ใช้ทั้งปุ่ม "ทดสอบฟังเสียง" และเสียงประกาศจริงในหน้าแรก
-- ถ้าเลือกเสียงเครื่องแต่เครื่องยังไม่มีเสียงภาษาไทย หน้าตั้งค่าจะขึ้นคำเตือนให้ติดตั้งเสียงไทยใน Settings → Text-to-speech
+- ทุกหน้าใช้ **`speechSynthesis` / Web Speech API** ของอุปกรณ์ในการพูดภาษาไทย (`th-TH`)
+- **ไม่มีเสียง AI, ไม่มีคีย์ Gemini, ไม่มี endpoint `speak`** — ทำงานได้แม้ออฟไลน์หลังโหลดหน้าแล้ว
+- ถ้าเครื่องยังไม่มีเสียงภาษาไทย ให้ติดตั้งใน Settings → Text-to-speech → Install voice data (Android)
+- บน iOS/Chrome ต้องแตะหน้าจอ 1 ครั้งก่อนถึงจะให้เสียงเล่นได้ (browser policy)
 
 ## วิธีทำงานของ "อ่านเสียงยอดเงินเข้า"
 
 1. เปิดหน้า `index.html` (แท็บ "ตรวจสลิป") ทิ้งไว้ที่เคาน์เตอร์
 2. มีรายการใหม่เข้ามา (แอป KTB → เงินเข้า ส่งอัตโนมัติ หรือเพิ่มผ่านหน้า "เพิ่มเงินเข้า" หรือพิมพ์ใน Google Sheet ตรง ๆ)
-3. ระบบ poll ทุก 8 วินาที → เจอรายการใหม่ → เสียงกริ่ง "ding-dong" + **เสียงที่เลือกไว้** (เสียง AI Gemini หรือเสียงเครื่อง ตามที่ตั้งในหน้า "ตั้งค่าเสียง") พูด
+3. ระบบ poll ทุก 8 วินาที → เจอรายการใหม่ → เสียงกริ่ง "ding-dong" + **เสียงพูดจากเครื่อง** พูด
    *"เงินเข้า 150 บาท"* (พูดแค่ยอดเงิน ไม่พูดชื่อลูกค้า — แต่ toast และแบนเนอร์บนจอแสดงชื่อลูกค้าด้วย)
-   (โหมดเสียง AI: ถ้า AI ใช้ไม่ได้ จะเปลี่ยนเป็นเสียงระบบอัตโนมัติ)
 
 ## เงินเข้าอัตโนมัติจาก Krungthai NEXT
 
@@ -384,9 +352,6 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 | `SPREADSHEET_ID` | ID ของสเปรดชีตที่ใช้เป็น DB |
 | `SHEET_NAME` | ชื่อชีต (ค่าเริ่มต้น `Records`) |
 | `DRIVE_FOLDER_ID` | ID ของโฟลเดอร์ Drive สำหรับเก็บไฟล์ |
-| `GEMINI_API_KEY` | คีย์ Gemini สำหรับเสียง AI (ตั้งผ่านหน้าเว็บได้) |
-| `TTS_MODEL` | โมเดล TTS (ค่าเริ่มต้น `gemini-3.8-flash-tts`) |
-| `TTS_VOICE` | โหมดเสียง เช่น `Zephyr` (ค่าเริ่มต้น) |
 
 ## แก้ปัญหาที่พบบ่อย
 
@@ -399,13 +364,7 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 - **พิมพ์แถวใน Google Sheet เองแล้วไม่มีเสียง** → ไม่จำเป็นต้องใส่คอลัมน์ `id`
   แต่ต้องมีข้อมูลอย่างน้อย 1 ช่อง (ชื่อ/ยอด/หมายเหตุ) และยอดเงินพิมพ์เป็นตัวเลขเท่านั้น เช่น `1500` หรือ `1,500`
 - **ไม่มีเสียงพูด** → เบราว์เซอร์ (โดยเฉพาะ iOS) ต้องแตะหน้าจอก่อน 1 ครั้งเพื่อปลดล็อกเสียง
-- **เสียง AI ใช้ไม่ได้ (เป็นเสียงระบบแทน)** → ตรวจการ์ด "AI Voice API Key" ในหน้าตั้งค่าว่าขึ้น "ตั้งค่าแล้ว" หรือยัง
-  ถ้ายังไม่ได้ตั้ง ให้วางคีย์ Gemini API แล้วกดบันทึก (คีย์เก็บบนเซิร์ฟเวอร์ ไม่แสดงบนหน้าเว็บ)
-  ถ้าขึ้น "ตั้งค่าแล้ว" แต่ยังเป็นเสียงระบบ อาจเป็นโควต้าคีย์หมดหรือเน็ตล่ม — ดู error ใน console (F12)
-  ถ้า console ขึ้น `HTTP 429: You exceeded your current quota` → โควต้า Gemini ของคีย์นี้หมดชั่วคราว
-  (มี free quota ต่อวัน/ต่อนาที) ให้รอสักครู่แล้วลองใหม่ หรือตั้ง billing ที่ Google AI Studio
-  ระหว่างรอ ระบบจะพูดด้วยเสียงระบบแทนอัตโนมัติ (เป็นพฤติกรรมที่ออกแบบไว้)
-- **อยากเปลี่ยนคีย์ Gemini ใหม่** → ไป Apps Script → Project Settings → Script properties
-  ลบ `GEMINI_API_KEY` ออกก่อน แล้วค่อยบันทึกคีย์ใหม่ผ่านหน้าเว็บได้
+- **ไม่มีเสียงพูดภาษาไทย** → ตรวจว่าเครื่องมีเสียงไทย install ไว้แล้ว (Android: Settings → Text-to-speech → Install voice data)
+  และแตะหน้าจอ 1 ครั้งก่อนทดสอบเสียง
 - **ไฟล์เปิดจากลิงก์ไม่ได้** → organization อาจห้ามแชร์สาธารณะ ให้แชร์โฟลเดอร์ `App Uploads` เอง
 - **`npm` ใช้ไม่ได้ใน PowerShell** → ตั้ง execution policy: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
