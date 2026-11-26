@@ -55,7 +55,7 @@ body, .pv-body {
 }
 .pv-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .pv-brand-icon {
-  width: 40px; height: 40px; border-radius: 999px;
+  width: 40px; height: 40px; border-radius: 9999px;
   object-fit: cover; box-shadow: 0 1px 3px rgba(0, 0, 0, .12);
   flex: none;
 }
@@ -72,7 +72,7 @@ body, .pv-body {
 }
 .pv-online {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 2px 8px; border-radius: 999px;
+  padding: 2px 8px; border-radius: 9999px;
   background: var(--pv-surface-container);
   color: var(--pv-on-surface); font-size: 14px; font-weight: 400; line-height: 14px;
 }
@@ -137,7 +137,7 @@ body, .pv-body {
 
 /* ---------- Button ---------- */
 .pv-btn {
-  border: 0; border-radius: 12px; padding: 0 14px; height: 48px;
+  border: 0; border-radius: 12px; padding: 0; height: 48px;
   font: inherit; font-weight: 600; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, .1), 0 4px 6px -4px rgba(0, 0, 0, .1);
@@ -146,7 +146,7 @@ body, .pv-body {
 .pv-btn:active { transform: scale(.98); }
 .pv-btn-primary { background: var(--pv-primary); color: var(--pv-on-primary); }
 .pv-btn-primary:hover { background: #00583c; }
-.pv-btn-secondary { background: var(--pv-surface-container); color: var(--pv-primary); }
+.pv-btn-secondary { background: var(--pv-surface-container); color: var(--pv-on-surface); }
 .pv-btn-secondary:hover { background: var(--pv-surface-high); }
 .pv-btn-danger { background: var(--pv-error-container); color: var(--pv-error); }
 .pv-btn-danger:hover { background: #ffc7c2; }
