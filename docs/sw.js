@@ -4,7 +4,7 @@
  * - ไม่แตะ request ข้ามโดเมน (เช่น Apps Script API) เด็ดขาด
  * - เปลี่ยน CACHE_NAME เมื่อต้องการล้าง cache ทั้งหมด
  */
-var CACHE_NAME = 'payvox-v1.2.4-no-ai';
+var CACHE_NAME = 'payvox-v1.2.5-icons';
 
 self.addEventListener('install', function (event) {
   self.skipWaiting();
@@ -27,7 +27,7 @@ self.addEventListener('fetch', function (event) {
 
   var url;
   try { url = new URL(req.url); } catch (e) { return; }
-  if (url.origin !== self.location.origin) return; // API/ฟอนต์ภายนอก: ปล่อยผ่าน ไม่ cache
+  if (url.origin !== self.location.origin) return; // API ภายนอก: ปล่อยผ่าน (ฟอนต์ไอคอน self-host แล้ว cache ได้)
 
   event.respondWith(
     fetch(req)

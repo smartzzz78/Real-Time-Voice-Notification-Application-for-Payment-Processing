@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -22,16 +23,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: docs
 
+      - name: รอ artifact ให้พร้อมก่อน deploy (retry 12 รอบ)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          for attempt in $(seq 1 12); do
+            artifact_id=$(gh api "repos/$GH_REPO/actions/runs/$GITHUB_RUN_ID/artifacts" \
+              --jq '.artifacts[] | select(.name == "github-pages") | .id' | head -n 1)
+            if [ -n "$artifact_id" ]; then
+              echo "Artifact github-pages พร้อมแล้ว (id=$artifact_id)"
+              exit 0
+            fi
+            echo "ยังไม่พบ artifact github-pages ($attempt/12) — รอ 5 วินาที"
+            sleep 5
+          done
+          echo "::error::ไม่พบ artifact github-pages หลังรอ 60 วินาที"
+          exit 1
+
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

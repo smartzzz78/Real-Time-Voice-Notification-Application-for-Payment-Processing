@@ -16,6 +16,7 @@
 
 เสียงประกาศพูดแค่ยอดเงิน เช่น **"เงินเข้า 150 บาท"** (ไม่พูดชื่อลูกค้า) ส่วนชื่อลูกค้ายังแสดงบนจอตามปกติ
 เสียงที่ใช้เป็น **เสียงพูดจากเครื่อง (Web Speech API)** เท่านั้น — ไม่มีการเรียก AI TTS ไม่ต้องใส่คีย์ Gemini ไม่กินโควตา/เน็ต
+ไอคอนทั้งหมดเป็น **Material Symbols แบบ self-host** (`docs/fonts/`, subset ~10 KB) จึงไม่โหลดจาก `fonts.googleapis.com` และถูก service worker cache ร่วมกับเว็บ
 
 ## ระบบ QR PromptPay
 
@@ -41,6 +42,7 @@
 │  ├─ index.html         # หน้าหลัก: ตรวจสลิป + อ่านเสียงยอดเงินเข้า
 │  ├─ qr.html            # หน้า QR: คำนวณยอดจากสินค้า + QR PromptPay
 │  ├─ money-in.html      # ฟอร์มบันทึกเงินเข้า (เปิดจากลิงก์ในหน้าแรก)
+│  ├─ fonts/             # ไอคอน Material Symbols self-host (subset + LICENSE)
 │  └─ js/
 │     ├─ config.js       # ใส่ Web App URL ที่นี่
 │     ├─ api.js          # ตัวเรียก API
@@ -361,6 +363,10 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
   ให้เปิด Web App URL ด้วยเบราว์เซอร์ที่ล็อกอินบัญชีเจ้าของ → Advanced → Go to project → Allow (1 ครั้งพอ)
 - **อัปเดตโค้ดแล้วหน้าเว็บยังเป็นของเก่า** → GitHub Pages แคชไฟล์ไว้ ~10 นาที
   กด Ctrl+F5 (hard refresh) หรือรอสักครู่แล้วรีเฟรชใหม่
+- **ไอคอนโชว์เป็นชื่อ เช่น `volume_up`** → ตรวจว่า `fonts/material-symbols.css?v=1` โหลดได้ (ไฟล์อยู่ใน repo แล้ว ไม่พึ่ง Google Fonts)
+  ถ้าเพิ่มไอคอนใหม่ ต้องสร้าง woff2 subset ให้ครบรายการในคอมเมนต์หัวไฟล์ CSS
+- **Pages deploy ขึ้น `No artifacts named "github-pages"`** → workflow มี retry รอ artifact 60 วิและใช้ actions เวอร์ชันใหม่แล้ว
+  ถ้ายังเจอให้ rerun job เดิม 1 ครั้ง (URL เว็บไม่เปลี่ยน)
 - **พิมพ์แถวใน Google Sheet เองแล้วไม่มีเสียง** → ไม่จำเป็นต้องใส่คอลัมน์ `id`
   แต่ต้องมีข้อมูลอย่างน้อย 1 ช่อง (ชื่อ/ยอด/หมายเหตุ) และยอดเงินพิมพ์เป็นตัวเลขเท่านั้น เช่น `1500` หรือ `1,500`
 - **ไม่มีเสียงพูด** → เบราว์เซอร์ (โดยเฉพาะ iOS) ต้องแตะหน้าจอก่อน 1 ครั้งเพื่อปลดล็อกเสียง
