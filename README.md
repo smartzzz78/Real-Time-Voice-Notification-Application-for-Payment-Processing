@@ -17,6 +17,7 @@
 เสียงประกาศพูดแค่ยอดเงิน เช่น **"เงินเข้า 150 บาท"** (ไม่พูดชื่อลูกค้า) ส่วนชื่อลูกค้ายังแสดงบนจอตามปกติ
 เสียงที่ใช้เป็น **เสียงพูดจากเครื่อง (Web Speech API)** เท่านั้น — ไม่มีการเรียก AI TTS ไม่ต้องใส่คีย์ Gemini ไม่กินโควตา/เน็ต
 ไอคอนทั้งหมดเป็น **Material Symbols แบบ self-host** (`docs/fonts/`, subset ~10 KB) จึงไม่โหลดจาก `fonts.googleapis.com` และถูก service worker cache ร่วมกับเว็บ
+UI ทั้ง 3 หน้าใช้คอมโพเนนต์/โทนสีเดียวกันจาก `docs/css/payvox.css` และ `docs/js/theme.js` (แก้ที่เดียว อัปเดตทุกหน้า)
 
 ## ระบบ QR PromptPay
 
@@ -43,10 +44,13 @@
 │  ├─ index.html         # หน้าหลัก: ตรวจสลิป + อ่านเสียงยอดเงินเข้า
 │  ├─ qr.html            # หน้า QR: คำนวณยอดจากสินค้า + QR PromptPay
 │  ├─ money-in.html      # ฟอร์มบันทึกเงินเข้า (เปิดจากลิงก์ในหน้าแรก)
+│  ├─ css/
+│  │  └─ payvox.css      # คอมโพเนนต์/shared UI ของทั้ง 3 หน้า
 │  ├─ fonts/             # ไอคอน Material Symbols self-host (subset + LICENSE)
 │  └─ js/
 │     ├─ config.js       # ใส่ Web App URL ที่นี่
 │     ├─ api.js          # ตัวเรียก API
+│     ├─ theme.js        # Tailwind config กลาง (สี/ฟอนต์/spacing)
 │     └─ app.js          # ดึงข้อมูล + อ่านเสียงยอดเงินเข้า (ใช้ใน index.html)
 ├─ backend/              # Apps Script (clasp)
 │  ├─ appsscript.json
